@@ -5,7 +5,7 @@
     numbering: none,
     background: image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch")
   )
-  set text(12pt)
+  set text(12pt, lang: "ru")
   show "л-": name => $lambda"-"$
 
   doc

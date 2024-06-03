@@ -1,4 +1,4 @@
-#import "template.lib.typ": problemlist
+#import "template.lib.typ": *
 #show: problemlist(1, [ Конверсия и редукция ])
 
 + one

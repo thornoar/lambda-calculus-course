@@ -5,3 +5,4 @@
 - types before the power of lambda
 - Define V, FV, BV, Sub in one batch
 - lambda-definition of FV? (exercise)
+- Functional programming seminar

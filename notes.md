@@ -1,3 +1,4 @@
+# Main course
 - focus on theoretical aspects, skip efficiency
 - introduce eta reduction in problems (does not influence Church-Rosser)
 - leave gaps in the `pre` function for a problem
@@ -5,4 +6,9 @@
 - types before the power of lambda
 - Define V, FV, BV, Sub in one batch
 - lambda-definition of FV? (exercise)
-- Functional programming seminar
+
+# Haskell seminar
+- Parser from and to the formal notation
+- Lambda term representation
+- Conversion, reduction
+- List shift function

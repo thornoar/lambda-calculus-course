@@ -47,10 +47,31 @@ checkCondition f a = if f a then Just a else Nothing
 --       | a == b = n
 --       | otherwise = findIndex a bs (n+1)
 
-infixr 9 ...
+getCombinedTerms :: String -> [String]
+getCombinedTerms [] = []
+getCombinedTerms (' ' : rest) = getCombinedTerms rest
+getCombinedTerms ('(' : ')' : rest) = getCombinedTerms rest
+getCombinedTerms (var : '\'' : rest) = (var : replicate (n + 1) '\'') : getCombinedTerms (drop n rest)
+  where
+    n = prefixLength (repeat '\'') rest
+getCombinedTerms (var : rest)
+  | var /= '(' = [var] : getCombinedTerms rest
+getCombinedTerms str = take n str : getCombinedTerms (drop n str)
+  where
+    findIndex :: String -> Variable -> Variable -> Variable
+    findIndex [] _ _ = 1
+    findIndex ('(' : rest) step count = findIndex rest (step + 1) (count + 1)
+    findIndex (')' : rest) step count
+      | step == 0 = count
+      | otherwise = findIndex rest (step - 1) (count + 1)
+    findIndex (a : rest) step count = findIndex rest step (count + 1)
+    n :: Variable
+    n = findIndex str (-1) 1
 
 (...) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
 (...) g f x = f x >>= g
+
+infixr 9 ...
 
 (&&&) :: (a -> Bool) -> (a -> Bool) -> (a -> Bool)
 (&&&) f g x = f x && g x
@@ -64,57 +85,30 @@ varSet :: [String]
 varSet = ['v' : replicate n '\'' | n <- [0 ..]]
 
 varSet' :: [Char]
-varSet' = ['x', 'y', 'z', 'w', 'u', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+varSet' = ['x', 'y', 'z', 'w', 'u', 't', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
-getCombObjects :: String -> [String]
-getCombObjects [] = []
-getCombObjects ('(' : ')' : rest) = getCombObjects rest
-getCombObjects ('v' : rest) = ('v' : replicate n '\'') : getCombObjects (drop n rest)
-  where
-    n = prefixLength (repeat '\'') rest
-getCombObjects (var : rest)
-  | var /= '(' = [var] : getCombObjects rest
-getCombObjects str =
-  take n str : getCombObjects (drop n str)
-  where
-    findIndex :: String -> Variable -> Variable -> Variable
-    findIndex [] _ _ = 0
-    findIndex ('(' : rest) step count =
-      findIndex rest (step + 1) (count + 1)
-    findIndex (')' : rest) step count
-      | step == 0 = count
-      | otherwise = findIndex rest (step - 1) (count + 1)
-    findIndex (a : rest) step count = findIndex rest step (count + 1)
-    n :: Variable
-    n = findIndex str (-1) 1
-
-formalVar :: Char -> String
-formalVar var
+toFormal :: String -> String
+toFormal [] = []
+toFormal [var]
   | var `elem` varSet' =
       let order = fromJust $ elemIndex var varSet'
        in varSet !! order
   | otherwise = [var]
-
-toFormal :: String -> String
-toFormal [] = []
-toFormal [var] = formalVar var
-toFormal ('\\' : var : '.' : ' ' : rest) =
-  "(\\" ++ formalVar var ++ toFormal rest ++ ")"
-toFormal ('\\' : var : ',' : rest) =
-  "(\\" ++ formalVar var ++ toFormal ('\\' : rest) ++ ")"
+toFormal ('\\' : var : '.' : ' ' : rest) = "(\\" ++ toFormal [var] ++ toFormal rest ++ ")"
+toFormal ('\\' : var : ',' : rest) = "(\\" ++ toFormal [var] ++ toFormal ('\\' : rest) ++ ")"
 toFormal expr
   | null objects = []
-  | length objects > 1 =
-      let operator = join $ init objects
-          operand = last objects
-       in "(" ++ toFormal operator ++ toFormal operand ++ ")"
-  | otherwise =
+  | length objects == 1 =
       let object = head objects
           braced = ('(' == head object) && (')' == last object)
           object' = if braced then (tail . init) object else object
        in toFormal object'
+  | otherwise =
+      let operator = join $ init objects
+          operand = last objects
+       in "(" ++ toFormal operator ++ toFormal operand ++ ")"
   where
-    objects = getCombObjects expr
+    objects = getCombinedTerms expr
 
 -- [TODO]
 -- fromFormal :: String -> String
@@ -134,58 +128,29 @@ io (Just str) = putStrLn str
   | isNothing s1 || isNothing s2 = Nothing
   | otherwise = Just (fromJust s1 ++ fromJust s2)
 
-getCombObjectsMaybe :: String -> Maybe [String]
-getCombObjectsMaybe [] = Just []
-getCombObjectsMaybe (')' : rest) = Nothing
-getCombObjectsMaybe ('(' : ')' : rest) = getCombObjectsMaybe rest
-getCombObjectsMaybe ('v' : rest) = Just ['v' : replicate n '\''] +++ getCombObjectsMaybe (drop n rest)
-  where
-    n = prefixLength (repeat '\'') rest
-getCombObjectsMaybe (var : rest)
-  | var /= '(' = if var `elem` varSet' then Just [[var]] +++ getCombObjectsMaybe rest else Nothing
-getCombObjectsMaybe str
-  | n == 0 = Nothing
-  | otherwise = Just [take n str] +++ getCombObjectsMaybe (drop n str)
-  where
-    findIndex :: String -> Variable -> Variable -> Variable
-    findIndex [] _ _ = 0
-    findIndex ('(' : rest) step count =
-      findIndex rest (step + 1) (count + 1)
-    findIndex (')' : rest) step count
-      | step == 0 = count
-      | otherwise = findIndex rest (step - 1) (count + 1)
-    findIndex (a : rest) step count = findIndex rest step (count + 1)
-    n :: Variable
-    n = findIndex str (-1) 1
-
-formalVarMaybe :: Char -> Maybe String
-formalVarMaybe var
+toFormalMaybe :: String -> Maybe String
+toFormalMaybe [] = Nothing
+toFormalMaybe [var]
   | var `elem` varSet' =
       let order = fromJust $ elemIndex var varSet'
        in Just (varSet !! order)
   | otherwise = Nothing
-
-toFormalMaybe :: String -> Maybe String
-toFormalMaybe [] = Nothing
-toFormalMaybe [var] = formalVarMaybe var
 toFormalMaybe ('\\' : var : '.' : ' ' : rest) =
-  Just "(\\" +++ formalVarMaybe var +++ toFormalMaybe rest +++ Just ")"
+  Just "(\\" +++ toFormalMaybe [var] +++ toFormalMaybe rest +++ Just ")"
 toFormalMaybe ('\\' : var : ',' : rest) =
-  Just "(\\" +++ formalVarMaybe var +++ toFormalMaybe ('\\' : rest) +++ Just ")"
+  Just "(\\" +++ toFormalMaybe [var] +++ toFormalMaybe ('\\' : rest) +++ Just ")"
 toFormalMaybe expr
-  | isNothing objects = Nothing
-  | null justObjects = Just []
-  | length justObjects > 1 = Just "(" +++ toFormalMaybe operator +++ toFormalMaybe operand +++ Just ")"
+  | null objects = Just []
+  | length objects > 1 = Just "(" +++ toFormalMaybe operator +++ toFormalMaybe operand +++ Just ")"
   | otherwise =
-      let object = head justObjects
+      let object = head objects
           braced = ('(' == head object) && (')' == last object)
           object' = if braced then tail $ init object else object
        in Just "(" +++ toFormalMaybe object' +++ Just ")"
   where
-    objects = getCombObjectsMaybe expr
-    justObjects = fromJust objects
-    operator = join $ init justObjects
-    operand = last justObjects
+    objects = getCombinedTerms expr
+    operator = join $ init objects
+    operand = last objects
 
 -- [TODO]
 -- fromFormalMaybe :: String -> Maybe String
@@ -200,6 +165,21 @@ type Variable = Int
 
 data Lambda = Var Variable | Abst Variable Lambda | Appl Lambda Lambda deriving (Read, Show, Eq)
 
+i :: Lambda
+i = fromJust $ parse "\\x. x"
+
+k :: Lambda
+k = fromJust $ parse "\\x,y. x"
+
+k' :: Lambda
+k' = fromJust $ parse "\\x,y. y"
+
+s :: Lambda
+s = fromJust $ parse "\\x,y,z. xz(yz)"
+
+y :: Lambda
+y = fromJust $ parse "\\f. (\\x. f(xx))(\\x. f(xx))"
+
 maybeAbst :: Variable -> Maybe Lambda -> Maybe Lambda
 maybeAbst _ Nothing = Nothing
 maybeAbst n (Just l) = Just $ Abst n l
@@ -211,6 +191,13 @@ maybeAppl (Just l1) (Just l2) = Just $ Appl l1 l2
 
 parse :: String -> Maybe Lambda
 parse [] = Nothing
+parse (' ' : rest) = parse rest
+parse ('\\' : var : ',' : ' ' : rest) = parse ('\\' : var : ',' : rest)
+parse ('\\' : var : '.' : ' ' : ' ' : rest) = parse ('\\' : var : '.' : ' ' : rest)
+parse ('I' : rest) = parse $ "(" ++ unparse i ++ ")" ++ rest
+parse ('K' : '*' : rest) = parse $ "(" ++ unparse k' ++ ")" ++ rest
+parse ('K' : rest) = parse $ "(" ++ unparse k ++ ")" ++ rest
+parse ('S' : rest) = parse $ "(" ++ unparse s ++ ")" ++ rest
 parse [var]
   | var `elem` varSet' = Just $ Var (fromJust $ elemIndex var varSet')
   | otherwise = Nothing
@@ -220,16 +207,14 @@ parse ('\\' : var : rest)
   | head rest == '.' = maybeAbst (fromJust $ elemIndex var varSet') (parse $ drop 2 rest)
   | otherwise = Nothing
 parse str
-  | isNothing objects = Nothing
-  | null justObjects = Nothing
-  | length justObjects == 1 =
-      let object = head justObjects
+  | null objects = Nothing
+  | length objects == 1 =
+      let object = head objects
           braced = ('(' == head object) && (')' == last object)
        in if braced then parse (tail . init $ object) else Nothing
-  | otherwise = maybeAppl (parse $ join (init justObjects)) (parse $ last justObjects)
+  | otherwise = maybeAppl (parse $ join (init objects)) (parse $ last objects)
   where
-    objects = getCombObjectsMaybe str
-    justObjects = fromJust objects
+    objects = getCombinedTerms str
 
 parseFormal :: String -> Maybe Lambda
 parseFormal [] = Nothing
@@ -241,12 +226,10 @@ parseFormal ('(' : '\\' : 'v' : rest) = maybeAbst n (parseFormal $ init $ drop n
   where
     n = prefixLength rest (repeat '\'')
 parseFormal ('(' : rest)
-  | isNothing objects = Nothing
-  | length justObjects /= 2 = Nothing
-  | otherwise = maybeAppl (parseFormal $ head justObjects) (parseFormal $ last justObjects)
+  | length objects /= 2 = Nothing
+  | otherwise = maybeAppl (parseFormal $ head objects) (parseFormal $ last objects)
   where
-    objects = getCombObjectsMaybe $ init rest
-    justObjects = fromJust objects
+    objects = getCombinedTerms $ init rest
 parseFormal _ = Nothing
 
 wrapAbst :: Lambda -> String
@@ -330,13 +313,25 @@ substitute (Var n) m l
 substitute (Abst n l1) m l2 = Abst n (substitute l1 m l2)
 substitute (Appl l1 l2) m l = Appl (substitute l1 m l) (substitute l2 m l)
 
+reduceSingle :: Lambda -> Lambda
+reduceSingle (Appl (Abst n l1) l2) = reduce $ substitute l1 n l2
+reduceSingle (Abst n (Appl l (Var m)))
+  | n == m && m `notMember` totalVarSet l = reduce l
+reduceSingle l = l
+
 reduce :: Lambda -> Lambda
-reduce (Appl (Abst n l1) l2) = reduce $ substitute l1 n l2
-reduce (Abst n (Appl l (Var m)))
-  | n == m && m `notMember` totalVarSet l = l
-reduce (Appl l1 l2) = Appl (reduce l1) (reduce l2)
-reduce (Abst n l) = Abst n (reduce l)
-reduce l = l
+reduce (Var n) = Var n
+reduce (Appl l1 l2) = reduceSingle $ Appl (reduce l1) (reduce l2)
+reduce (Abst n l) = reduceSingle $ Abst n (reduce l)
+
+-- reduce (Appl (Abst n l1) l2) = reduce $ substitute l1 n l2
+-- reduce (Abst n (Appl l (Var m)))
+--   | n == m && m `notMember` totalVarSet l = l
+-- reduce (Appl (Appl (Abst n l1) l2) l3) = reduce $ Appl (substitute l1 n l2) l3
+-- reduce (Appl (Appl l1 l2) l3) = reduce $ Appl (reduce (Appl l1 l2)) l3
+-- reduce (Appl l1 l2) = Appl (reduce l1) (reduce l2)
+-- reduce (Abst n l) = Abst n (reduce l)
+-- reduce l = l
 
 -- Shorthands
 

@@ -1,23 +1,8 @@
 import Control.Monad
 import Data.List (elemIndex, nub)
 import Data.Maybe
-import Data.Set (Set, delete, empty, insert, intersection, member, notMember, singleton, union)
-
--- $basic
--- ┌────────────────────┐
--- │ Basic introduction │
--- └────────────────────┘
-
-fib :: Variable -> Variable
-fib 0 = 1
-fib 1 = 1
-fib n = fib (n - 2) + fib (n - 1)
-
-fibList :: [Int]
-fibList = map fib [0 ..]
-
-square :: Float -> Float
-square x = x * x
+import Data.Char (isAlpha)
+import Data.Set (Set, delete, empty, insert, intersection, member, notMember, singleton, union, toList)
 
 prefixLength :: (Eq a) => [a] -> [a] -> Int
 prefixLength [] _ = 0
@@ -29,44 +14,33 @@ prefixLength (x : xs) (y : ys)
 checkCondition :: (a -> Bool) -> a -> Maybe a
 checkCondition f a = if f a then Just a else Nothing
 
--- [TODO]
--- union :: (Eq a) => [a] -> [a] -> [a]
--- union [] bs = bs
--- union (a:as) bs
---   | a `elem` bs = union as bs
---   | otherwise = a : union as bs
-
--- [TODO]
--- elemIndex :: (Eq a) => a -> [a] -> Maybe Variable
--- elemIndex a as
---   | a `notElem` as = Nothing
---   | otherwise = Just $ findIndex a as 0
---   where
---     findIndex :: (Eq a) => a -> [a] -> Variable -> Variable
---     findIndex a (b:bs) n
---       | a == b = n
---       | otherwise = findIndex a bs (n+1)
-
 getCombinedTerms :: String -> [String]
 getCombinedTerms [] = []
 getCombinedTerms (' ' : rest) = getCombinedTerms rest
 getCombinedTerms ('(' : ')' : rest) = getCombinedTerms rest
-getCombinedTerms (var : '\'' : rest) = (var : replicate (n + 1) '\'') : getCombinedTerms (drop n rest)
-  where
-    n = prefixLength (repeat '\'') rest
 getCombinedTerms (var : rest)
-  | var /= '(' = [var] : getCombinedTerms rest
-getCombinedTerms str = take n str : getCombinedTerms (drop n str)
+  | null rest = [[var]]
+  | isAlpha var = (var : take n1 rest) : getCombinedTerms (drop n1 rest)
+  | var == '(' = (var : take n2 rest) : getCombinedTerms (drop n2 rest)
+  | otherwise = [var] : getCombinedTerms rest
   where
-    findIndex :: String -> Variable -> Variable -> Variable
-    findIndex [] _ _ = 1
-    findIndex ('(' : rest) step count = findIndex rest (step + 1) (count + 1)
-    findIndex (')' : rest) step count
-      | step == 0 = count
-      | otherwise = findIndex rest (step - 1) (count + 1)
-    findIndex (a : rest) step count = findIndex rest step (count + 1)
-    n :: Variable
-    n = findIndex str (-1) 1
+    findAlpha :: String -> Int -> Int
+    findAlpha [] m = m
+    findAlpha (a:as) m
+      | a == '(' = m
+      | isAlpha a = m
+      | otherwise = findAlpha as (m+1)
+    n1 :: Int
+    n1 = findAlpha rest 0
+    findClosingBracket :: String -> Int -> Int -> Int
+    findClosingBracket [] _ _ = 0
+    findClosingBracket ('(' : rest') step count = findClosingBracket rest' (step + 1) (count + 1)
+    findClosingBracket (')' : rest') step count
+      | step == 0 = count+1
+      | otherwise = findClosingBracket rest' (step - 1) (count + 1)
+    findClosingBracket (a : rest') step count = findClosingBracket rest' step (count + 1)
+    n2 :: Int
+    n2 = findClosingBracket rest 0 0
 
 (...) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
 (...) g f x = f x >>= g
@@ -85,7 +59,7 @@ varSet :: [String]
 varSet = ['v' : replicate n '\'' | n <- [0 ..]]
 
 varSet' :: [Char]
-varSet' = ['x', 'y', 'z', 'w', 'u', 't', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+varSet' = ['x', 'y', 'z', 'w', 'u', 't', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'p', 'q']
 
 toFormal :: String -> String
 toFormal [] = []
@@ -198,6 +172,7 @@ parse ('I' : rest) = parse $ "(" ++ unparse i ++ ")" ++ rest
 parse ('K' : '*' : rest) = parse $ "(" ++ unparse k' ++ ")" ++ rest
 parse ('K' : rest) = parse $ "(" ++ unparse k ++ ")" ++ rest
 parse ('S' : rest) = parse $ "(" ++ unparse s ++ ")" ++ rest
+parse ('Y' : rest) = parse $ "(" ++ unparse y ++ ")" ++ rest
 parse [var]
   | var `elem` varSet' = Just $ Var (fromJust $ elemIndex var varSet')
   | otherwise = Nothing
@@ -251,13 +226,12 @@ unparseFormal (Var n) = varSet !! n
 unparseFormal (Abst n l) = "(\\" ++ unparseFormal (Var n) ++ unparseFormal l ++ ")"
 unparseFormal (Appl l1 l2) = "(" ++ unparseFormal l1 ++ unparseFormal l2 ++ ")"
 
--- exercises
-
-toFormalStr :: String -> String
-toFormalStr = unparseFormal . fromJust . parse'
-
-toInformalStr :: String -> String
-toInformalStr = unparse . fromJust . parseFormal'
+-- [TODO]
+-- toFormalIO :: String -> String
+-- toFormalIO = unparseFormal . fromJust . parse
+--
+-- toInformalIO :: String -> String
+-- toInformalIO = unparse . fromJust . parseFormal
 
 -- ┌─────────────────────────────────────┐
 -- │ Coding up the logic of lambda terms │
@@ -298,49 +272,100 @@ parse' str = parse str >>= checkCondition isValid
 parseFormal' :: String -> Maybe Lambda
 parseFormal' str = parseFormal str >>= checkCondition isValid
 
-toFormalStr' :: String -> String
-toFormalStr' = unparse . fromJust . parse'
-
-toInformalStr' :: String -> String
-toInformalStr' = unparse . fromJust . parse'
-
 -- Lambda transformation
 
 substitute :: Lambda -> Variable -> Lambda -> Lambda
 substitute (Var n) m l
   | n == m = l
   | otherwise = Var n
-substitute (Abst n l1) m l2 = Abst n (substitute l1 m l2)
+substitute (Abst n l1) m l2
+  | n `notElem` bnd2 = Abst n (substitute l1 m l2)
+  | otherwise = Abst n (substitute l1 m l2')
+  where
+    bnd2 = toList $ boundVarSet l2
+    l2' = changeBoundVar l2 n (1 + maximum bnd2)
 substitute (Appl l1 l2) m l = Appl (substitute l1 m l) (substitute l2 m l)
 
-reduceSingle :: Lambda -> Lambda
-reduceSingle (Appl (Abst n l1) l2) = reduce $ substitute l1 n l2
-reduceSingle (Abst n (Appl l (Var m)))
-  | n == m && m `notMember` totalVarSet l = reduce l
-reduceSingle l = l
+changeBoundVar :: Lambda -> Variable -> Variable -> Lambda
+changeBoundVar (Var n) _ _ = Var n
+changeBoundVar (Abst n l) m1 m2
+  | n == m1 = Abst m2 $ substitute l m1 (Var m2)
+  | otherwise = Abst n $ changeBoundVar l m1 m2
+changeBoundVar (Appl l1 l2) m1 m2 = Appl (changeBoundVar l1 m1 m2) (changeBoundVar l2 m1 m2)
+
+reduceStep :: Lambda -> (Lambda, Bool)
+reduceStep (Appl (Abst n l1) l2) = (substitute l1 n l2, True)
+reduceStep (Abst n (Appl l (Var m)))
+  | n == m && m `notMember` freeVarSet l = (l, True)
+reduceStep (Var n) = (Var n, False)
+reduceStep (Appl l1 l2)
+  | found1 = (Appl l1' l2, True)
+  | found2 = (Appl l1 l2', True)
+  | otherwise = (Appl l1 l2, False)
+  where
+    (l1', found1) = reduceStep l1
+    (l2', found2) = reduceStep l2
+reduceStep (Abst n l) = (Abst n l', found)
+  where
+    (l', found) = reduceStep l
 
 reduce :: Lambda -> Lambda
-reduce (Var n) = Var n
-reduce (Appl l1 l2) = reduceSingle $ Appl (reduce l1) (reduce l2)
-reduce (Abst n l) = reduceSingle $ Abst n (reduce l)
+reduce l
+  | found = reduce l'
+  | otherwise = l
+  where 
+    (l', found) = reduceStep l
 
--- reduce (Appl (Abst n l1) l2) = reduce $ substitute l1 n l2
--- reduce (Abst n (Appl l (Var m)))
---   | n == m && m `notMember` totalVarSet l = l
--- reduce (Appl (Appl (Abst n l1) l2) l3) = reduce $ Appl (substitute l1 n l2) l3
--- reduce (Appl (Appl l1 l2) l3) = reduce $ Appl (reduce (Appl l1 l2)) l3
--- reduce (Appl l1 l2) = Appl (reduce l1) (reduce l2)
--- reduce (Abst n l) = Abst n (reduce l)
--- reduce l = l
+reduceTimes :: Int -> Lambda -> Lambda
+reduceTimes 0 l = l
+reduceTimes n l
+  | found = reduceTimes (n-1) l'
+  | otherwise = l
+  where 
+    (l', found) = reduceStep l
+
+equiv :: Lambda -> Lambda -> Bool
+equiv (Var n1) (Var n2)
+  | n1 == n2 = True
+  | otherwise = False
+equiv (Appl p1 p2) (Appl q1 q2) = equiv p1 q1 && equiv p2 q2
+equiv (Abst n1 l1) (Abst n2 l2)
+  | n1 == n2 = equiv l1 l2
+  | otherwise = equiv l1 (substitute l2 n2 (Var n1))
+equiv _ _ = False
+
+equiv' :: Lambda -> Lambda -> Bool
+equiv' l1 l2 = equiv (reduce l1) (reduce l2)
 
 -- Shorthands
 
-substituteStr :: String -> String -> String -> String
-substituteStr s1 s2 s3 = unparse $ substitute l1 n l2
+lm :: String -> Lambda
+lm = fromJust . parse'
+
+toFormalIO' :: String -> IO ()
+toFormalIO' = putStrLn . unparseFormal . fromJust . parse'
+
+toInformalIO' :: String -> IO ()
+toInformalIO' = putStrLn . unparse . fromJust . parseFormal'
+
+printIO :: String -> IO ()
+printIO = putStrLn . unparse . fromJust . parse'
+
+substituteIO :: String -> String -> String -> IO ()
+substituteIO s1 s2 s3 = putStrLn $ unparse $ substitute l1 n l2
   where
     l1 = fromJust $ parse s1
     (Var n) = fromJust $ parse s2
     l2 = fromJust $ parse s3
 
-reduceStr :: String -> String
-reduceStr = unparse . reduce . fromJust . parse'
+reduceIO :: String -> IO ()
+reduceIO = putStrLn . unparse . reduce . fromJust . parse'
+
+reduceTimesIO :: Int -> String -> IO ()
+reduceTimesIO n = putStrLn . unparse . reduceTimes n . fromJust . parse'
+
+equivIO :: String -> String -> IO ()
+equivIO s1 s2 = print $ equiv (fromJust . parse' $ s1) (fromJust . parse' $ s2)
+
+equivIO' :: String -> String -> IO ()
+equivIO' s1 s2 = print $ equiv' (fromJust . parse' $ s1) (fromJust . parse' $ s2)

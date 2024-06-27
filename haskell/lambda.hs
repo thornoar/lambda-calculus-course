@@ -4,6 +4,11 @@ import Data.List (elemIndex, nub)
 import Data.Maybe
 import Data.Set (Set, delete, empty, insert, intersection, member, notMember, singleton, toList, union)
 
+maximum' :: (Ord a, Num a) => Set a -> a
+maximum' s
+  | null s = 0
+  | otherwise = maximum s
+
 prefixLength :: (Eq a) => [a] -> [a] -> Int
 prefixLength [] _ = 0
 prefixLength _ [] = 0
@@ -59,9 +64,9 @@ raise f ma mb = mb >>= raise' f ma
     raise' :: (Monad m) => (a -> b -> c) -> m a -> b -> m c
     raise' f ma b = fmap (`f` b) ma
 
--- ┌───────────────────────────────┐
--- │ Modelling the lambda calculus │
--- └───────────────────────────────┘
+-- ┌───────────────────────────┐
+-- │ the lambda calculus model │
+-- └───────────────────────────┘
 
 varSetFormal :: [String]
 varSetFormal = ['v' : replicate n '\'' | n <- [0 ..]]
@@ -97,11 +102,6 @@ y = fromJust $ parse "\\f.(\\x.f(xx))(\\x.f(xx))"
 pair :: Lambda -> Lambda -> Lambda
 pair l1 l2 = Abst n (Appl (Appl (Var n) l1) l2)
   where
-    maximum' :: Set Int -> Int
-    maximum' s
-      | null s = 0
-      | otherwise = maximum s
-
     n = 1 + max (maximum' $ freeVarSet l1) (maximum' $ freeVarSet l2)
 
 cn :: Int -> Lambda
@@ -225,9 +225,9 @@ unparseFormal (Var n) = varSetFormal !! n
 unparseFormal (Abst n l) = "(\\" ++ unparseFormal (Var n) ++ unparseFormal l ++ ")"
 unparseFormal (Appl l1 l2) = "(" ++ unparseFormal l1 ++ unparseFormal l2 ++ ")"
 
--- ┌─────────────────────────────────────┐
--- │ Coding up the logic of lambda terms │
--- └─────────────────────────────────────┘
+-- ┌───────────────────────────┐
+-- │ the logic of lambda terms │
+-- └───────────────────────────┘
 
 totalVarSet :: Lambda -> Set Variable
 totalVarSet (Var n) = singleton n
@@ -248,8 +248,7 @@ isValid :: Lambda -> Bool
 isValid (Var _) = True
 isValid (Abst n l) = n `notMember` boundVarSet l && isValid l
 isValid (Appl l1 l2) =
-  isValid l1
-    && isValid l2
+  isValid l1 && isValid l2
     && (fv1 `intersection` bv2 == empty)
     && (fv2 `intersection` bv1 == empty)
   where
@@ -281,6 +280,14 @@ changeBoundVar (Abst n l) m1 m2
   | n == m1 = Abst m2 $ substitute l m1 (Var m2)
   | otherwise = Abst n $ changeBoundVar l m1 m2
 changeBoundVar (Appl l1 l2) m1 m2 = Appl (changeBoundVar l1 m1 m2) (changeBoundVar l2 m1 m2)
+
+adjustBoundVars :: Lambda -> Lambda
+adjustBoundVars l = foldl (\x -> uncurry (changeBoundVar x)) l chlist
+-- adjustBoundVars l = foldl (uncurry changeBoundVar) l chlist
+  where
+    fv = freeVarSet l
+    fvmax = 1 + maximum' fv
+    chlist = zip (toList fv) [fvmax .. (fvmax - 1 + length fv)]
 
 reduceStep :: Lambda -> (Lambda, Bool)
 reduceStep (Appl (Abst n l1) l2) = (substitute l1 n l2, True)

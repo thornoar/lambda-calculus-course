@@ -13,12 +13,12 @@ help :: InputT IO ()
 help = do
   outputStrLn "cannot help you"
 
-eval_ :: Mode -> String -> InputT IO ()
-eval_ REPEAT = outputStrLn
-eval_ REDUCE = io (unparse' . reduce) . parse'
-eval_ REDUCESTEPS = io (unparse' . reduceTimes 1) . parse'
-eval_ PRINT = io unparse' . parse'
-eval_ SHOW = io show . parse'
+eval :: Mode -> String -> InputT IO ()
+eval REPEAT = outputStrLn
+eval REDUCE = io (unparse' . reduce) . parse'
+eval REDUCESTEPS = io (unparse' . reduceTimes 1) . parse'
+eval PRINT = io unparse' . parse'
+eval SHOW = io show . parse'
 
 main :: IO ()
 main = runInputT defaultSettings $ loop REPEAT
@@ -38,8 +38,9 @@ main = runInputT defaultSettings $ loop REPEAT
         Just ":steps" -> loop REDUCESTEPS
         Just ":print" -> loop PRINT
         Just ":show" -> loop SHOW
-        Just (':':'r':'p':' ':rest) -> eval_ REPEAT rest >> loop mode
-        Just (':':'r':'s':' ':rest) -> eval_ REDUCESTEPS rest >> loop mode
-        Just (':':'p':' ':rest) -> eval_ PRINT rest >> loop mode
-        Just (':':'s':' ':rest) -> eval_ SHOW rest >> loop mode
-        Just input -> eval_ mode input >> loop mode
+        Just (':':'r':'p':' ':rest) -> eval REPEAT rest >> loop mode
+        Just (':':'r':'s':' ':rest) -> eval REDUCESTEPS rest >> loop mode
+        Just (':':'r':' ':rest) -> eval REDUCE rest >> loop mode
+        Just (':':'p':' ':rest) -> eval PRINT rest >> loop mode
+        Just (':':'s':' ':rest) -> eval SHOW rest >> loop mode
+        Just input -> eval mode input >> loop mode

@@ -77,6 +77,9 @@ raise f ma mb = mb >>= raise' f ma
     raise' :: (Monad m) => (a -> b -> c) -> m a -> b -> m c
     raise' f' ma' b' = fmap (`f'` b') ma'
 
+uncurry' :: (a -> b -> c -> d) -> a -> (b, c) -> d
+uncurry' f a = uncurry (f a)
+
 -- ┌───────────────────────────┐
 -- │ the lambda calculus model │
 -- └───────────────────────────┘
@@ -317,7 +320,7 @@ changeBoundVar (Abst n l) m1 m2
 changeBoundVar (Appl l1 l2) m1 m2 = Appl (changeBoundVar l1 m1 m2) (changeBoundVar l2 m1 m2)
 
 moveBoundVars :: Lambda -> [Variable] -> Lambda
-moveBoundVars l lst = foldl (\x -> uncurry (changeBoundVar x)) l pairlst
+moveBoundVars l lst = foldl (uncurry' changeBoundVar) l pairlst
   where
     bv = boundVarSet l
     lst' = intersection lst bv

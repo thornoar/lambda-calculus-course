@@ -164,3 +164,49 @@
 --
 -- _equiv' :: String -> String -> IO ()
 -- _equiv' s1 s2 = print $ raise equiv' (parse' s1) (parse' s2)
+
+
+
+    -- Just "" -> loop mode
+    -- Just (':':'r':'s':' ':rest) -> evalOnce STEPS rest >> loop mode
+    -- Just (':':'r':' ':rest) -> evalOnce REDUCE rest >> loop mode
+    -- Just (':':'p':' ':rest) -> evalOnce PRINT rest >> loop mode
+    -- Just (':':'e':'q':' ':rest) -> evalOnce EQUIV rest >> loop mode
+    -- Just (':':'s':' ':rest) -> evalOnce SHOW rest >> loop mode
+    -- Just input -> evalOnce mode input >> loop mode
+
+
+-- pipeMaybe :: (Monad m) => (a -> m (Maybe b)) -> Maybe a -> m (Maybe b)
+-- pipeMaybe f Nothing = return Nothing
+-- pipeMaybe f (Just a) = f a
+
+
+-- evalOnce :: Mode -> String -> InputT IO ()
+-- evalOnce PRINT = io (("| " ++) . color "34" . unparse') . parse'
+-- evalOnce REDUCE = io (("| " ++) . color "34" . unparse' . reduce) . parse'
+-- evalOnce STEPS = io' . parse'
+--   where
+--     io' :: Maybe Lambda -> InputT IO ()
+--     io' Nothing = outputStrLn $ color "1;31" "error:" ++ " Incorrect syntax."
+--     io' (Just l) = showSteps l
+--     showSteps :: Lambda -> InputT IO ()
+--     showSteps l
+--       | found = do
+--         outputStr $ "| " ++ color "34" (unparse' l')
+--         _ <- getInputLine ""
+--         showSteps l'
+--       | otherwise = return ()
+--       where
+--         (l', found) = reduceStep l
+-- evalOnce EQUIV = showEquiv
+--   where
+--     io' :: Maybe Bool -> InputT IO ()
+--     io' Nothing = outputStrLn $ color "1;31" "error:" ++ " Incorrect syntax."
+--     io' (Just b) = outputStrLn . ("| " ++) . color "33" . show $ b
+--     showEquiv :: String -> InputT IO ()
+--     showEquiv str1 = do
+--       let ml1 = parse' str1
+--       str2 <- getInputLine $ "  (" ++ color "37" "AND" ++ "): "
+--       let ml2 = str2 >>= parse'
+--       io' $ raise equiv' ml1 ml2
+-- evalOnce SHOW = io (("| " ++) . color "35" . show) . parse'

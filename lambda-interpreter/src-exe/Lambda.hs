@@ -1,7 +1,9 @@
+module Lambda where
+
 import Control.Monad
 import Data.Char (isAlpha, isDigit)
 import Data.List (elemIndex, nub)
-import Data.Maybe (fromJust)
+import Data.Maybe
 -- import Data.Set (Set, delete, empty, insert, intersection, member, notMember, singleton, toList, fromList, union)
 
 maximum' :: (Ord a, Num a) => [a] -> a
@@ -56,7 +58,7 @@ getCombinedTerms (var : rest)
     findClosingParen (')' : rest') step
       | step == 0 = 1
       | otherwise = 1 + findClosingParen rest' (step - 1)
-    findClosingParen (a : rest') step = 1 + findClosingParen rest' step
+    findClosingParen (_ : rest') step = 1 + findClosingParen rest' step
     n2 :: Int
     n2 = findClosingParen rest 0
     findClosingBracket :: String -> Int -> Int
@@ -65,7 +67,7 @@ getCombinedTerms (var : rest)
     findClosingBracket (']' : rest') step
       | step == 0 = 1
       | otherwise = 1 + findClosingBracket rest' (step - 1)
-    findClosingBracket (a : rest') step = 1 + findClosingBracket rest' step
+    findClosingBracket (_ : rest') step = 1 + findClosingBracket rest' step
     n3 :: Int
     n3 = findClosingBracket rest 0
 
@@ -73,7 +75,7 @@ raise :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
 raise f ma mb = mb >>= raise' f ma
   where
     raise' :: (Monad m) => (a -> b -> c) -> m a -> b -> m c
-    raise' f ma b = fmap (`f` b) ma
+    raise' f' ma' b' = fmap (`f'` b') ma'
 
 -- ┌───────────────────────────┐
 -- │ the lambda calculus model │
@@ -83,66 +85,83 @@ varSetFormal :: [String]
 varSetFormal = ['v' : replicate n '\'' | n <- [0 ..]]
 
 varSet :: [Char]
-varSet = ['x', 'y', 'z', 'w', 'u', 't', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'p', 'q']
+varSet = ['x', 'y', 'z', 'w', 'u', 't', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'p', 'q', 'n', 'm', 'k']
 
 type Variable = Int
 
 data Lambda = Var Variable | Abst Variable Lambda | Appl Lambda Lambda deriving (Read, Show, Eq)
 
-i :: Lambda
-i = parse "\\x.x"
+combinatorI :: Lambda
+combinatorI = parseJust "\\x.x"
 
-k :: Lambda
-k = parse "\\x,y.x"
+combinatorK :: Lambda
+combinatorK = parseJust "\\x,y.x"
 
 true :: Lambda
-true = k
+true = combinatorK
 
-k' :: Lambda
-k' = parse "\\x,y.y"
+combinatorK' :: Lambda
+combinatorK' = parseJust "\\x,y.y"
 
 false :: Lambda
-false = k'
+false = combinatorK'
 
-s :: Lambda
-s = parse "\\x,y,z.xz(yz)"
+combinatorS :: Lambda
+combinatorS = parseJust "\\x,y,z.xz(yz)"
 
-y :: Lambda
-y = parse "\\f.(\\x.f(xx))(\\x.f(xx))"
+combinatorY :: Lambda
+combinatorY = parseJust "\\f.(\\x.f(xx))(\\x.f(xx))"
 
-cn :: Int -> Lambda
-cn 0 = Abst 0 i
-cn n = Abst 0 (Abst 1 (Appl (Var 0) (Appl (cn (n-1)) (Var 1))))
+church :: Int -> Lambda
+church 0 = adjustBoundVars $ Abst 0 combinatorI
+church n = adjustBoundVars $ Abst 0 $ Abst 1 $ Appl (Var 0) $ Appl (Appl (church (n-1)) (Var 0)) (Var 1)
 
-zc :: Lambda
-zc = parse "\\x.x((\\y,z.y)(\\y,z.z))(\\y,z.y)"
+zeroChurch :: Lambda
+zeroChurch = parseJust "\\x.x((\\y,z.y)(\\y,z.z))(\\y,z.y)"
+
+succChurch :: Lambda
+succChurch = parseJust "\\f,x,y.fx(xy)"
+-- succChurch = parseJust "\\f,x,y.x(fxy)"
+
+prevChurch :: Lambda
+prevChurch = parseJust "\\x,y,z.x(\\p,q.q(py))((\\u,w.u)z)(\\t.t)"
 
 pair :: Lambda -> Lambda -> Lambda
 pair l1 l2 = Abst n (Appl (Appl (Var n) l1) l2)
   where
     n = 1 + max (maximum' $ freeVarSet l1) (maximum' $ freeVarSet l2)
 
-bn :: Int -> Lambda
-bn 0 = i
-bn n = pair false (bn $ n - 1)
+barend :: Int -> Lambda
+barend 0 = combinatorI
+barend n = pair false (barend $ n - 1)
 
-zb :: Lambda
-zb = parse "\\x.x(\\y,z.y)"
+zeroBarend :: Lambda
+zeroBarend = parseJust "\\x.x(\\y,z.y)"
+
+succBarend :: Lambda
+succBarend = parseJust "\\f,x.x(\\y,z.z)f"
+
+prevBarend :: Lambda
+prevBarend = parseJust "\\f.f(\\x,y.y)"
 
 preprocess :: String -> String
 preprocess [] = []
-preprocess ('I' : rest) = "(" ++ unparse i ++ ")" ++ preprocess rest
-preprocess ('K' : '*' : rest) = "(" ++ unparse k' ++ ")" ++ preprocess rest
+preprocess ('I' : rest) = "(" ++ unparse combinatorK ++ ")" ++ preprocess rest
+preprocess ('K' : '*' : rest) = "(" ++ unparse combinatorK' ++ ")" ++ preprocess rest
 preprocess ('f':'a':'l':'s':'e':rest) = preprocess $ 'K' : '*' : rest
-preprocess ('K' : rest) = "(" ++ unparse k ++ ")" ++ preprocess rest
+preprocess ('K' : rest) = "(" ++ unparse combinatorK ++ ")" ++ preprocess rest
 preprocess ('t':'r':'u':'e':rest) = preprocess $ 'K' : rest
-preprocess ('Z':'b':rest) = "(" ++ unparse zb ++ ")" ++ preprocess rest
-preprocess ('Z':'c':rest) = "(" ++ unparse zc ++ ")" ++ preprocess rest
-preprocess ('S' : rest) = "(" ++ unparse s ++ ")" ++ preprocess rest
-preprocess ('Y' : rest) = "(" ++ unparse y ++ ")" ++ preprocess rest
+preprocess ('c':'Z':'e':'r':'o':rest) = "(" ++ unparse zeroChurch ++ ")" ++ preprocess rest
+preprocess ('b':'Z':'e':'r':'o':rest) = "(" ++ unparse zeroBarend ++ ")" ++ preprocess rest
+preprocess ('c':'S':'u':'c':'c':rest) = "(" ++ unparse succChurch ++ ")" ++ preprocess rest
+preprocess ('b':'S':'u':'c':'c':rest) = "(" ++ unparse succBarend ++ ")" ++ preprocess rest
+preprocess ('c':'P':'r':'e':'v':rest) = "(" ++ unparse prevChurch ++ ")" ++ preprocess rest
+preprocess ('b':'P':'r':'e':'v':rest) = "(" ++ unparse prevBarend ++ ")" ++ preprocess rest
+preprocess ('S' : rest) = "(" ++ unparse combinatorS ++ ")" ++ preprocess rest
+preprocess ('Y' : rest) = "(" ++ unparse combinatorY ++ ")" ++ preprocess rest
 preprocess (char:'_':rest)
-  | char == 'c' = "(" ++ unparse (cn num) ++ ")" ++ preprocess (drop (length strNum) rest)
-  | char == 'b' = "(" ++ unparse (bn num) ++ ")" ++ preprocess (drop (length strNum) rest)
+  | char == 'c' = "(" ++ unparse (church num) ++ ")" ++ preprocess (drop (length strNum) rest)
+  | char == 'b' = "(" ++ unparse (barend num) ++ ")" ++ preprocess (drop (length strNum) rest)
   | otherwise = preprocess rest
   where
     findNumber :: String -> String
@@ -161,46 +180,52 @@ preprocess (' ':'e':'l':'s':'e':rest) = preprocess rest
 preprocess (' ':rest) = preprocess rest
 preprocess (char:str) = char : preprocess str
 
-parse :: String -> Lambda
+parse :: String -> Maybe Lambda
 parse ('v' : rest)
-  | allPrimes rest = Var $ length rest
+  | allPrimes rest = Just $ Var $ length rest
   where
     allPrimes :: String -> Bool
     allPrimes [] = True
     allPrimes ('\'':rest') = allPrimes rest'
     allPrimes _ = False
 parse [var]
-  | var `elem` varSet = Var (fromJust $ elemIndex var varSet)
+  | var `elem` varSet = Just $ Var (fromJust $ elemIndex var varSet)
+  | otherwise = Nothing
 parse ('\\' : var : rest)
   | var == 'v' =
     let n = prefixLength rest (repeat '\'')
         newrest = drop n rest
         comma = head newrest == ','
-     in Abst n (parse $ if comma then '\\' : tail newrest else tail newrest)
-  | head rest == ',' = Abst (fromJust $ elemIndex var varSet) (parse $ '\\' : tail rest)
-  | head rest == '.' = Abst (fromJust $ elemIndex var varSet) (parse $ tail rest)
+     in raise Abst (Just n) (parse $ if comma then '\\' : tail newrest else tail newrest)
+  | head rest == ',' = raise Abst (elemIndex var varSet) (parse $ '\\' : tail rest)
+  | head rest == '.' = raise Abst (elemIndex var varSet) (parse $ tail rest)
+  | otherwise = Nothing
 parse str
-  | length objects > 1 = Appl (parse $ join (init objects)) (parse $ last objects)
+  | length objects > 1 = raise Appl (parse $ join (init objects)) (parse $ last objects)
   | head object == '(' = parse (init . tail $ object)
+  -- | otherwise = Nothing
   where
     objects = getCombinedTerms str
     object = head objects
-parse ('[':rest) = pair (parse s1) (parse s2)
+parse ('[':rest) = raise pair (parse s1) (parse s2)
   where
     (s1, rest') = splitAt (findSemicolon rest) rest--(take semicolonN rest, drop semicolonN rest)
-    (s2, rest'') = splitAt (findClosingBracket (tail rest') 0) (tail rest')
+    (s2, _) = splitAt (findClosingBracket (tail rest') 0) (tail rest')
+    findSemicolon :: String -> Int
+    findSemicolon [] = 0
+    findSemicolon (';':_) = 0
+    findSemicolon (_:rest'') = 1 + findSemicolon rest''
+    findClosingBracket :: String -> Int -> Int
+    findClosingBracket [] _ = 0
+    findClosingBracket ('[' : str) step = 1 + findClosingBracket str (step + 1)
+    findClosingBracket (']' : str) step
+      | step == 0 = 0
+      | otherwise = 1 + findClosingBracket str (step - 1)
+    findClosingBracket (_ : str) step = 1 + findClosingBracket str step
+parse _ = Nothing
 
-findSemicolon :: String -> Int
-findSemicolon [] = 0
-findSemicolon (';':rest') = 0
-findSemicolon (char:rest') = 1 + findSemicolon rest'
-findClosingBracket :: String -> Int -> Int
-findClosingBracket [] _ = 0
-findClosingBracket ('[' : str) step = 1 + findClosingBracket str (step + 1)
-findClosingBracket (']' : str) step
-  | step == 0 = 0
-  | otherwise = 1 + findClosingBracket str (step - 1)
-findClosingBracket (a : str) step = 1 + findClosingBracket str step
+parseJust :: String -> Lambda
+parseJust = fromJust . parse
 
 wrapAbst :: Lambda -> String
 wrapAbst (Abst n l) = "(" ++ unparse (Abst n l) ++ ")"
@@ -263,8 +288,11 @@ isValid (Appl l1 l2) =
     fv2 = freeVarSet l2
     bv2 = boundVarSet l2
 
-parse' :: String -> Lambda
-parse' str = adjustBoundVars $ parse (preprocess str)
+parse' :: String -> Maybe Lambda
+parse' str = adjustBoundVars <$> parse (preprocess str)
+
+parseJust' :: String -> Lambda
+parseJust' = fromJust . parse'
 
 -- Lambda transformation
 
@@ -349,38 +377,48 @@ equiv _ _ = False
 equiv' :: Lambda -> Lambda -> Bool
 equiv' l1 l2 = equiv (reduce l1) (reduce l2)
 
--- Shorthands
-
-apply :: Lambda -> String -> Lambda
-apply l s = reduce $ Appl l (parse' s)
-
-_apply :: Lambda -> String -> IO ()
-_apply l = putStrLn . unparse' . apply l
-
-_toFormal' :: String -> IO ()
-_toFormal' = putStrLn . unparseFormal . parse'
-
-_toInformal' :: String -> IO ()
-_toInformal' = putStrLn . unparse' . parse'
-
-_print :: String -> IO ()
-_print = putStrLn . unparse' . parse'
-
-_substitute :: String -> String -> String -> IO ()
-_substitute s1 s2 s3 = putStrLn . unparse' $ substitute l1 n l2
-  where
-    l1 = parse s1
-    (Var n) = parse s2
-    l2 = parse s3
-
-_reduce :: String -> IO ()
-_reduce = putStrLn . unparse' . reduce . parse'
-
-_reduceTimes :: Int -> String -> IO ()
-_reduceTimes n = putStrLn . unparse' . reduceTimes n . parse'
-
-_equiv :: String -> String -> IO ()
-_equiv s1 s2 = print $ equiv (parse' s1) (parse' s2)
-
-_equiv' :: String -> String -> IO ()
-_equiv' s1 s2 = print $ equiv' (parse' s1) (parse' s2)
+-- apply :: Lambda -> String -> Maybe Lambda
+-- apply l s = reduce . Appl l <$> parse' s
+--
+-- _apply :: Lambda -> String -> IO ()
+-- _apply l str = io unparse' $ apply l str
+-- -- _apply l = putStrLn . unparse' . apply l
+--
+-- _toFormal' :: String -> IO ()
+-- _toFormal' = io unparseFormal . parse'
+-- -- _toFormal' = putStrLn . unparseFormal . parse'
+--
+-- _toInformal' :: String -> IO ()
+-- _toInformal' = io unparse . parse'
+-- -- _toInformal' = putStrLn . unparse' . parse'
+--
+-- _print :: String -> IO ()
+-- _print = io unparse' . parse'
+--
+-- _substitute :: String -> String -> String -> IO ()
+-- _substitute s1 s2 s3 = io unparse' $ sub l1 l2 l3
+--   where
+--     l1 = parse s1
+--     l2 = parse s2
+--     l3 = parse s3
+--     sub :: Maybe Lambda -> Maybe Lambda -> Maybe Lambda -> Maybe Lambda
+--     sub l1' (Just (Var n)) l3' = raise (`substitute` n) l1' l3'
+--     sub _ _ _ = Nothing
+--
+-- _reduce :: String -> IO ()
+-- _reduce = io (unparse' . reduce) . parse'
+--
+-- _reduce' :: Lambda -> IO ()
+-- _reduce' = io (unparse' . reduce) . Just
+--
+-- _reduceTimes :: Int -> String -> IO ()
+-- _reduceTimes n = io (unparse' . reduceTimes n) . parse'
+--
+-- _reduceTimes' :: Int -> Lambda -> IO ()
+-- _reduceTimes' n = io (unparse' . reduceTimes n) . Just
+--
+-- _equiv :: String -> String -> IO ()
+-- _equiv s1 s2 = print $ raise equiv (parse' s1) (parse' s2)
+--
+-- _equiv' :: String -> String -> IO ()
+-- _equiv' s1 s2 = print $ raise equiv' (parse' s1) (parse' s2)

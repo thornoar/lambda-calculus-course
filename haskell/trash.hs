@@ -1,4 +1,3 @@
-
 -- $conversion
 -- ┌─────────────────────────────────────────┐
 -- │ Converting formal and informal notation │

@@ -146,7 +146,7 @@ prevBarend = parseJust "\\f.f(\\x,y.y)"
 
 preprocess :: String -> String
 preprocess [] = []
-preprocess ('I' : rest) = "(" ++ unparse combinatorK ++ ")" ++ preprocess rest
+preprocess ('I' : rest) = "(" ++ unparse combinatorI ++ ")" ++ preprocess rest
 preprocess ('K' : '*' : rest) = "(" ++ unparse combinatorK' ++ ")" ++ preprocess rest
 preprocess ('f':'a':'l':'s':'e':rest) = preprocess $ 'K' : '*' : rest
 preprocess ('K' : rest) = "(" ++ unparse combinatorK ++ ")" ++ preprocess rest
@@ -376,49 +376,3 @@ equiv _ _ = False
 
 equiv' :: Lambda -> Lambda -> Bool
 equiv' l1 l2 = equiv (reduce l1) (reduce l2)
-
--- apply :: Lambda -> String -> Maybe Lambda
--- apply l s = reduce . Appl l <$> parse' s
---
--- _apply :: Lambda -> String -> IO ()
--- _apply l str = io unparse' $ apply l str
--- -- _apply l = putStrLn . unparse' . apply l
---
--- _toFormal' :: String -> IO ()
--- _toFormal' = io unparseFormal . parse'
--- -- _toFormal' = putStrLn . unparseFormal . parse'
---
--- _toInformal' :: String -> IO ()
--- _toInformal' = io unparse . parse'
--- -- _toInformal' = putStrLn . unparse' . parse'
---
--- _print :: String -> IO ()
--- _print = io unparse' . parse'
---
--- _substitute :: String -> String -> String -> IO ()
--- _substitute s1 s2 s3 = io unparse' $ sub l1 l2 l3
---   where
---     l1 = parse s1
---     l2 = parse s2
---     l3 = parse s3
---     sub :: Maybe Lambda -> Maybe Lambda -> Maybe Lambda -> Maybe Lambda
---     sub l1' (Just (Var n)) l3' = raise (`substitute` n) l1' l3'
---     sub _ _ _ = Nothing
---
--- _reduce :: String -> IO ()
--- _reduce = io (unparse' . reduce) . parse'
---
--- _reduce' :: Lambda -> IO ()
--- _reduce' = io (unparse' . reduce) . Just
---
--- _reduceTimes :: Int -> String -> IO ()
--- _reduceTimes n = io (unparse' . reduceTimes n) . parse'
---
--- _reduceTimes' :: Int -> Lambda -> IO ()
--- _reduceTimes' n = io (unparse' . reduceTimes n) . Just
---
--- _equiv :: String -> String -> IO ()
--- _equiv s1 s2 = print $ raise equiv (parse' s1) (parse' s2)
---
--- _equiv' :: String -> String -> IO ()
--- _equiv' s1 s2 = print $ raise equiv' (parse' s1) (parse' s2)

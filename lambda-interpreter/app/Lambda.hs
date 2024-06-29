@@ -351,9 +351,23 @@ reduceStep (Abst n l) = (Abst n l', found)
   where
     (l', found) = reduceStep l
 
+reduceLimit :: Int
+reduceLimit = 1000
+
+reduceWithLimit :: Int -> Lambda -> Lambda
+reduceWithLimit n l
+  | n > reduceLimit = l
+  | found = reduceWithLimit (n+1) l'
+  | otherwise = l
+  where
+    (l', found) = reduceStep l
+
 reduce :: Lambda -> Lambda
-reduce l
-  | found = reduce l'
+reduce = reduceWithLimit 0
+
+reduce' :: Lambda -> Lambda
+reduce' l
+  | found = reduce' l'
   | otherwise = l
   where
     (l', found) = reduceStep l

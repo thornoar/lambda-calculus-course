@@ -2,9 +2,8 @@ module Main where
 
 import Lambda
 import System.Console.Haskeline
--- import Control.Monad.Catch (handle)
 
-data Mode = SILENT | REPEAT | PRINT | REDUCE | STEPS | EQUIV | SHOW | READ | TOFORMAL | TOINFORMAL | FORMAT
+data Mode = SILENT | REPEAT | PRINT | REDUCE | STEPS | CONGR | EQUIV | SHOW | READ | TOFORMAL | TOINFORMAL | FORMAT
   deriving (Read, Show)
 
 color :: String -> String -> String
@@ -26,6 +25,22 @@ printReturn f str = do
 help :: InputT IO ()
 help = do
   outputStrLn "usage: [:rp | :rs | :r | :p | :s] [LAMBDA]"
+
+withTwo :: (Lambda -> Lambda -> Bool) -> String -> InputT IO (Maybe String)
+withTwo f str1 = do
+  let ml1 = parse' str1
+      print' :: Maybe Bool -> InputT IO (Maybe String)
+      print' mb = do
+        let res = show <$> mb
+        printLn res
+        return res
+  str2 <- getInputLine $ "  (" ++ color "33" "AND" ++ "): "
+  case str2 of
+    Nothing -> return Nothing
+    Just [] -> return Nothing
+    _ -> do
+      let ml2 = str2 >>= parse'
+      print' $ raise f ml1 ml2
 
 evalOnce :: Mode -> String -> InputT IO (Maybe String)
 evalOnce SILENT = return . Just
@@ -49,23 +64,8 @@ evalOnce STEPS = print' . parse'
           if found
           then showSteps l'
           else return lstr
-evalOnce EQUIV = showEquiv
-  where
-    print' :: Maybe Bool -> InputT IO (Maybe String)
-    print' mb = do
-      let res = show <$> mb
-      printLn res
-      return res
-    showEquiv :: String -> InputT IO (Maybe String)
-    showEquiv str1 = do
-      let ml1 = parse' str1
-      str2 <- getInputLine $ "  (" ++ color "33" "AND" ++ "): "
-      case str2 of
-        Nothing -> return Nothing
-        Just [] -> return Nothing
-        _ -> do
-          let ml2 = str2 >>= parse'
-          print' $ raise equiv' ml1 ml2
+evalOnce CONGR = withTwo equiv
+evalOnce EQUIV = withTwo equiv'
 evalOnce SHOW = printReturn (fmap show . parse')
 evalOnce READ = printReturn (fmap unparse' . read)
 evalOnce TOFORMAL = printReturn (fmap unparseFormal . parse')
@@ -88,6 +88,7 @@ eval mode str = case str of
   ('#':'p':' ':rest) -> pipe PRINT mode rest
   ('#':'r':' ':rest) -> pipe REDUCE mode rest
   ('#':'r':'s':' ':rest) -> pipe STEPS mode rest
+  ('#':'c':'g':' ':rest) -> pipe CONGR mode rest
   ('#':'e':'q':' ':rest) -> pipe EQUIV mode rest
   ('#':'s':'h':' ':rest) -> pipe SHOW SILENT rest
   ('#':'r':'d':' ':rest) -> pipe READ mode rest
@@ -112,6 +113,7 @@ loop mode = do
     Just "#print" -> loop PRINT
     Just "#reduce" -> loop REDUCE
     Just "#steps" -> loop STEPS
+    Just "#congr" -> loop CONGR
     Just "#equiv" -> loop EQUIV
     Just "#show" -> loop SHOW
     Just "#read" -> loop READ
@@ -123,6 +125,7 @@ loop mode = do
     Just "#p" -> loop PRINT
     Just "#r" -> loop REDUCE
     Just "#rs" -> loop STEPS
+    Just "#cg" -> loop CONGR
     Just "#eq" -> loop EQUIV
     Just "#sh" -> loop SHOW
     Just "#rd" -> loop READ

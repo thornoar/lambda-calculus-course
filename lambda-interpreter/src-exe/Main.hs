@@ -140,16 +140,8 @@ settings = Settings {
   autoAddHistory = True
 }
 
--- interrupt :: InputT IO (Maybe String)
--- interrupt = do
---   outputStrLn $ color "31" "Interrupted."
---   handleInterrupt interrupt $ withInterrupt $ loop REDUCE
-interrupt :: InputT IO ()
-interrupt = outputStrLn $ color "31" "Interrupted."
-
 main :: IO ()
 main = runInputT settings
-  $ handleInterrupt interrupt $ withInterrupt
   $ do
     _ <- loop REDUCE
     return ()

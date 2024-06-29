@@ -51,7 +51,7 @@ color :: String -> String -> String
 color typ str = "\ESC[" ++ typ ++ "m" ++ str ++ "\ESC[0m"
 
 errorString :: String -> String
-errorString str = color "1;31" "error:" ++ str ++ "."
+errorString str = color "1;31" "error: " ++ str ++ "."
 
 adjustSpaces :: Int -> String -> String
 adjustSpaces n str
@@ -151,7 +151,12 @@ handleCommand str f = do
       let cmd = take n str
           str' = drop (n+1) str
       if member cmd commandMap
-      then f (commandMap ! cmd) str'
+      then
+        if null str'
+        then do
+          outputStrLn $ errorString "No argument given"
+          return Nothing
+        else f (commandMap ! cmd) str'
       else do
         outputStrLn $ errorString "Unknown command"
         return Nothing

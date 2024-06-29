@@ -71,6 +71,7 @@ executable lambda-interpreter
     build-depends:
         base ^>=4.17.2.1,
         containers ^>=0.6.2.1,
+        -- exceptions ^>=0.10.5,
         haskeline ^>=0.8.2.1
 
     -- Directories containing source files.

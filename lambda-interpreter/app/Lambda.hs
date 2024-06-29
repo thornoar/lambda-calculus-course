@@ -99,13 +99,11 @@ combinatorI = parseJust "\\x.x"
 
 combinatorK :: Lambda
 combinatorK = parseJust "\\x,y.x"
-
 true :: Lambda
 true = combinatorK
 
 combinatorK' :: Lambda
 combinatorK' = parseJust "\\x,y.y"
-
 false :: Lambda
 false = combinatorK'
 
@@ -118,14 +116,10 @@ combinatorY = parseJust "\\f.(\\x.f(xx))(\\x.f(xx))"
 church :: Int -> Lambda
 church 0 = adjustBoundVars $ Abst 0 combinatorI
 church n = adjustBoundVars $ Abst 0 $ Abst 1 $ Appl (Var 0) $ Appl (Appl (church (n-1)) (Var 0)) (Var 1)
-
 zeroChurch :: Lambda
 zeroChurch = parseJust "\\x.x((\\y,z.y)(\\y,z.z))(\\y,z.y)"
-
 succChurch :: Lambda
 succChurch = parseJust "\\f,x,y.fx(xy)"
--- succChurch = parseJust "\\f,x,y.x(fxy)"
-
 prevChurch :: Lambda
 prevChurch = parseJust "\\x,y,z.x(\\p,q.q(py))((\\u,w.u)z)(\\t.t)"
 
@@ -137,15 +131,16 @@ pair l1 l2 = Abst n (Appl (Appl (Var n) l1) l2)
 barend :: Int -> Lambda
 barend 0 = combinatorI
 barend n = pair false (barend $ n - 1)
-
 zeroBarend :: Lambda
 zeroBarend = parseJust "\\x.x(\\y,z.y)"
-
 succBarend :: Lambda
 succBarend = parseJust "\\f,x.x(\\y,z.z)f"
-
 prevBarend :: Lambda
 prevBarend = parseJust "\\f.f(\\x,y.y)"
+
+-- ┌──────────────────────┐
+-- │ Parsing lambda terms │
+-- └──────────────────────┘
 
 preprocess :: String -> String
 preprocess [] = []
@@ -179,7 +174,6 @@ preprocess (char:'_':rest)
 preprocess ('i':'f':' ':rest) = '(' : preprocess rest
 preprocess (' ':'t':'h':'e':'n':' ':rest) = ')' : preprocess rest
 preprocess (' ':'e':'l':'s':'e':rest) = preprocess rest
--- preprocess ('[':rest) = 
 preprocess (' ':rest) = preprocess rest
 preprocess (char:str) = char : preprocess str
 
@@ -195,18 +189,21 @@ parse [var]
   | var `elem` varSet = Just $ Var (fromJust $ elemIndex var varSet)
   | otherwise = Nothing
 parse ('\\' : var : rest)
+  | null rest = Nothing
   | var == 'v' =
     let n = prefixLength rest (repeat '\'')
-        newrest = drop n rest
-        comma = head newrest == ','
-     in raise Abst (Just n) (parse $ if comma then '\\' : tail newrest else tail newrest)
+        tempstr = drop n rest
+        rest' = if null tempstr then [] else case head tempstr of
+            ',' -> '\\' : tail tempstr
+            '.' -> tail tempstr
+            _ -> tempstr
+     in raise Abst (Just n) (parse rest')
   | head rest == ',' = raise Abst (elemIndex var varSet) (parse $ '\\' : tail rest)
   | head rest == '.' = raise Abst (elemIndex var varSet) (parse $ tail rest)
   | otherwise = Nothing
 parse str
   | length objects > 1 = raise Appl (parse $ join (init objects)) (parse $ last objects)
   | head object == '(' = parse (init . tail $ object)
-  -- | otherwise = Nothing
   where
     objects = getCombinedTerms str
     object = head objects
@@ -297,7 +294,9 @@ parse' str = adjustBoundVars <$> parse (preprocess str)
 parseJust' :: String -> Lambda
 parseJust' = fromJust . parse'
 
--- Lambda transformation
+-- ┌───────────────────────┐
+-- │ Lambda transformation │
+-- └───────────────────────┘
 
 substitute :: Lambda -> Variable -> Lambda -> Lambda
 substitute (Var n) m l
@@ -366,6 +365,10 @@ reduceTimes n l
   | otherwise = l
   where
     (l', found) = reduceStep l
+
+-- ┌─────────────┐
+-- │ Labda query │
+-- └─────────────┘
 
 equiv :: Lambda -> Lambda -> Bool
 equiv (Var n1) (Var n2)

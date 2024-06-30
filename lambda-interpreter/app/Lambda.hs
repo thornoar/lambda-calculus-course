@@ -34,8 +34,6 @@ checkCondition f a = if f a then Just a else Nothing
 
 getCombinedTerms :: String -> [String]
 getCombinedTerms [] = []
--- getCombinedTerms (' ' : rest) = getCombinedTerms rest
-getCombinedTerms ('(' : ')' : rest) = getCombinedTerms rest
 getCombinedTerms (var : rest)
   | null rest = [[var]]
   | isAlpha var = (var : take n1 rest) : getCombinedTerms (drop n1 rest)

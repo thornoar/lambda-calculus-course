@@ -27,13 +27,13 @@ commandList = [
     ("pr", "print", PRINT, "parses a given lambda expression and prints it"),
     ("r", "reduce", REDUCE, "reduces a given lambda expression and prints it"),
     ("rs", "steps", STEPS, "enters a step-by-step reduction process"),
-    ("cg", "conrg", CONGR, "prints whether two given expressions are congruent (with variable replacement)"),
-    ("eq", "equiv", EQUIV, "prints whether two given expressions are reducible to the same one"),
+    ("cr", "congr", CONGR, "prints whether two given expressions are congruent (with variable replacement)"),
+    ("e", "equiv", EQUIV, "prints whether two given expressions are reducible to the same one"),
     ("sh", "show", SHOW, "prints the internal representation of a lambda expression"),
     ("rd", "read", READ, "evaluates a given internal representation and prints it"),
     ("tf", "toformal", TOFORMAL, "converts to the formal notation"),
     ("ti", "toinformal", TOINFORMAL, "converts to the informal notation"),
-    ("s", "format", FORMAT, "adjusts the bound variables to avoid collisions")
+    ("fm", "format", FORMAT, "adjusts the bound variables to avoid collisions")
   ]
 
 commandMap :: Map String Mode

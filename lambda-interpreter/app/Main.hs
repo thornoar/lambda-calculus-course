@@ -114,7 +114,9 @@ evalOnce REDUCE = printReturn (fmap (unparse' . reduce) . parse')
 evalOnce STEPS = print' . parse'
   where
     print' :: Maybe Lambda -> InputT IO (Maybe String)
-    print' Nothing = return Nothing
+    print' Nothing = do
+      printLn Nothing
+      return Nothing
     print' (Just l) = showSteps l
     showSteps :: Lambda -> InputT IO (Maybe String)
     showSteps l = do

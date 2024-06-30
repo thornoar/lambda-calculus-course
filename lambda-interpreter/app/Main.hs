@@ -3,6 +3,7 @@ module Main where
 import Lambda
 import System.Console.Haskeline
 import Data.Map (Map, empty, insert, member, (!))
+import Text.Read (readMaybe)
 -- import Data.List (replicate)
 
 -- ┌─────────────────────┐
@@ -133,7 +134,7 @@ evalOnce STEPS = print' . parse'
 evalOnce CONGR = withTwo equiv
 evalOnce EQUIV = withTwo equiv'
 evalOnce SHOW = printReturn (fmap show . parse')
-evalOnce READ = printReturn (fmap unparse' . read)
+evalOnce READ = printReturn (fmap unparse' . readMaybe)
 evalOnce TOFORMAL = printReturn (fmap unparseFormal . parse')
 evalOnce TOINFORMAL = printReturn (fmap unparse' . parse')
 evalOnce FORMAT = printReturn (fmap (unparse . adjustBoundVars) . parse')
@@ -145,36 +146,34 @@ evalOnce FORMAT = printReturn (fmap (unparse . adjustBoundVars) . parse')
 handleCommand :: String -> (Mode -> String -> InputT IO (Maybe String)) -> InputT IO (Maybe String)
 handleCommand str f = do
   let mn = splitByFirstSpace str
+      err :: String -> InputT IO (Maybe String)
+      err str' = do
+        outputStrLn $ errorString str'
+        return Nothing
   case mn of
-    Nothing -> do
-      outputStrLn $ errorString "Could not parse command and argument"
-      return Nothing
+    Nothing -> err "Could not parse command and argument"
     (Just n) -> do
       let cmd = take n str
           str' = drop (n+1) str
       if member cmd commandMap
       then
         if null str'
-        then do
-          outputStrLn $ errorString "No argument given"
-          return Nothing
+        then err "No argument given"
         else f (commandMap ! cmd) str'
-      else do
-        outputStrLn $ errorString "Unknown command"
-        return Nothing
+      else err "Unknown command"
 
 pipe :: Mode -> Mode -> String -> InputT IO (Maybe String)
-pipe curmode basemode str = do
-  val <- eval basemode str
+pipe basemode curmode str = do
+  val <- eval curmode str
   case val of
-    Nothing -> return Nothing
-    (Just val') -> evalOnce curmode val'
+    Nothing -> return $ Just "a-ha!"
+    (Just val') -> evalOnce basemode val'
 
 eval :: Mode -> String -> InputT IO (Maybe String)
 eval mode str = case str of
   [] -> return Nothing
-  ('<':rest) -> handleCommand rest $ pipe mode
-  ('@':rest) -> handleCommand rest evalOnce
+  ('<':rest) -> handleCommand rest (pipe mode)
+  ('@':rest) -> handleCommand rest eval
   input -> evalOnce mode input
 
 loop :: Mode -> InputT IO ()

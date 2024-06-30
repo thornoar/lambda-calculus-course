@@ -4,13 +4,13 @@ import Lambda
 import System.Console.Haskeline
 import Data.Map (Map, empty, insert, member, (!))
 import Text.Read (readMaybe)
--- import Data.List (replicate)
+import Control.Monad (join)
 
 -- ┌─────────────────────┐
 -- │ Command definitions │
 -- └─────────────────────┘
 
-data Mode = SILENT | REPEAT | PRINT | REDUCE | STEPS | CONGR | EQUIV | SHOW | READ | TOFORMAL | TOINFORMAL | FORMAT
+data Mode = RETURN | REPEAT | PRINT | REDUCE | STEPS | CONGR | EQUIV | SHOW | READ | TOFORMAL | TOINFORMAL | FORMAT
   deriving (Read, Show)
 
 mapFromList :: (Ord a) => [(a, a, b, a)] -> Map a b
@@ -22,7 +22,7 @@ mapFromList ((a1,a2,b,_):rest) =
 
 commandList :: [(String, String, Mode, String)]
 commandList = [
-    ("s", "silent", SILENT, "swallows input and returns it"),
+    ("rt", "return", RETURN, "swallows input and returns it"),
     ("rp", "repeat", REPEAT, "repeats input as-is"),
     ("pr", "print", PRINT, "parses a given lambda expression and prints it"),
     ("r", "reduce", REDUCE, "reduces a given lambda expression and prints it"),
@@ -78,37 +78,50 @@ help = do
 -- │ Evaluating and returning output │
 -- └─────────────────────────────────┘
 
-printGeneral :: (String -> InputT IO ()) -> Maybe String -> InputT IO ()
-printGeneral f Nothing = f $ errorString "Incorect syntax"
-printGeneral f (Just str) = f . ("| " ++) . color "34" $ str
+printGeneral :: (String -> InputT IO ()) -> Maybe String -> InputT IO (Maybe String)
+printGeneral f Nothing = do
+  f $ errorString "Incorect input"
+  return Nothing
+printGeneral f (Just str) = do
+  f . ("| " ++) . color "34" $ str
+  return $ Just str
 
-printLn :: Maybe String -> InputT IO ()
+printLn :: Maybe String -> InputT IO (Maybe String)
 printLn = printGeneral outputStrLn
 
 printReturn :: (String -> Maybe String) -> String -> InputT IO (Maybe String)
 printReturn f str = do
   let res = f str
   printLn res
-  return res
 
-withTwo :: (Lambda -> Lambda -> Bool) -> String -> InputT IO (Maybe String)
-withTwo f str1 = do
-  let ml1 = parse' str1
-      print' :: Maybe Bool -> InputT IO (Maybe String)
-      print' mb = do
-        let res = show <$> mb
-        printLn res
-        return res
-  str2 <- getInputLine $ "  (" ++ color "33" "AND" ++ "): "
-  case str2 of
-    Nothing -> return Nothing
-    Just [] -> return Nothing
-    _ -> do
-      let ml2 = str2 >>= parse'
-      print' $ raise f ml1 ml2
+withTwo :: (String -> String -> Maybe String) -> String -> String -> InputT IO (Maybe String)
+withTwo f prompt str1 = do
+  mstr2 <- getInputLine $ "  (" ++ color "33" prompt ++ "): "
+  case mstr2 of
+    Nothing -> printLn (Just "Aborted.")
+    Just [] -> printLn Nothing
+    Just str2 -> do
+      mstr2' <- eval RETURN str2
+      printLn $ mstr2' >>= f str1
+
+withThree :: (String -> String -> String -> Maybe String) -> (String, String) -> String -> InputT IO (Maybe String)
+withThree f (prompt1, prompt2) str1 = do
+  mstr2 <- getInputLine $ "  (" ++ color "33" prompt1 ++ "): "
+  case mstr2 of
+    Nothing -> printLn (Just "Aborted.")
+    Just [] -> printLn Nothing
+    Just str2 -> do
+      mstr2' <- eval RETURN str2
+      mstr3 <- getInputLine $ "  (" ++ color "33" prompt2 ++ "): "
+      case mstr3 of
+        Nothing -> printLn (Just "Aborted.")
+        Just [] -> printLn Nothing
+        Just str3 -> do
+          mstr3' <- eval RETURN str3
+          printLn $ join $ raise (f str1) mstr2' mstr3'
 
 evalOnce :: Mode -> String -> InputT IO (Maybe String)
-evalOnce SILENT = return . Just
+evalOnce RETURN = return . Just
 evalOnce REPEAT = printReturn Just
 evalOnce PRINT = printReturn (fmap unparse' . parse')
 evalOnce REDUCE = printReturn (fmap (unparse' . reduce) . parse')
@@ -117,12 +130,12 @@ evalOnce STEPS = print' . parse'
     print' :: Maybe Lambda -> InputT IO (Maybe String)
     print' Nothing = do
       printLn Nothing
-      return Nothing
+      -- return Nothing
     print' (Just l) = showSteps l
     showSteps :: Lambda -> InputT IO (Maybe String)
     showSteps l = do
       let lstr = Just $ unparse' l
-      printGeneral outputStr lstr
+      _ <- printGeneral outputStr lstr
       input <- getInputLine ""
       case input of
         Nothing -> return lstr
@@ -131,8 +144,14 @@ evalOnce STEPS = print' . parse'
           if found
           then showSteps l'
           else return lstr
-evalOnce CONGR = withTwo equiv
-evalOnce EQUIV = withTwo equiv'
+evalOnce CONGR = withTwo equivStr "AND"
+  where
+    equivStr :: String -> String -> Maybe String
+    equivStr str1 str2 = show <$> raise equiv (parse' str1) (parse' str2)
+evalOnce EQUIV = withTwo equivStr' "AND"
+  where
+    equivStr' :: String -> String -> Maybe String
+    equivStr' str1 str2 = show <$> raise equiv' (parse' str1) (parse' str2)
 evalOnce SHOW = printReturn (fmap show . parse')
 evalOnce READ = printReturn (fmap unparse' . readMaybe)
 evalOnce TOFORMAL = printReturn (fmap unparseFormal . parse')
@@ -172,6 +191,7 @@ pipe basemode curmode str = do
 eval :: Mode -> String -> InputT IO (Maybe String)
 eval mode str = case str of
   [] -> return Nothing
+  (' ':rest) -> eval mode rest
   ('<':rest) -> handleCommand rest (pipe mode)
   ('@':rest) -> handleCommand rest eval
   input -> evalOnce mode input

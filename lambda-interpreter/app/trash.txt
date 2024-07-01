@@ -210,3 +210,22 @@
 --       let ml2 = str2 >>= parse'
 --       io' $ raise equiv' ml1 ml2
 -- evalOnce SHOW = io (("| " ++) . color "35" . show) . parse'
+
+-- withThree :: (String -> String -> String -> Maybe String) -> (String, String) -> String -> InputT IO (Maybe String)
+-- withThree f (prompt1, prompt2) str1 = do
+--   mstr2 <- getInputLine $ "  (" ++ color "33" prompt1 ++ "): "
+--   case mstr2 of
+--     Nothing -> printLn (Just "Aborted.")
+--     Just [] -> printLn Nothing
+--     Just str2 -> do
+--       mstr2' <- eval RETURN str2
+--       case mstr2' of
+--         Nothing -> return Nothing
+--         Just str2' -> do
+--           mstr3 <- getInputLine $ "  (" ++ color "33" prompt2 ++ "): "
+--           case mstr3 of
+--             Nothing -> printLn (Just "Aborted.")
+--             Just [] -> printLn Nothing
+--             Just str3 -> do
+--               mstr3' <- eval RETURN str3
+--               printLn $ mstr3' >>= f str1 str2'

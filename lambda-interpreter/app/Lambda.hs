@@ -176,6 +176,7 @@ preprocess (' ':rest) = preprocess rest
 preprocess (char:str) = char : preprocess str
 
 parse :: String -> Maybe Lambda
+parse [] = Nothing
 parse ('v' : rest)
   | allPrimes rest = Just $ Var $ length rest
   where

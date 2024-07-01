@@ -108,7 +108,7 @@ withTwo ::
   String ->
   InputT IO (Maybe String)
 withTwo f rA rB sC prt str1 = rA str1 >>== \a -> do
-  minput <- getColoredInputLine $ prompt '=' prt
+  minput <- getColoredInputLine $ prompt ' ' prt
   mstr2 <- minput >>== eval RETURN
   let mb = mstr2 >>= rB
   mb >>== \b -> printLn $ Just $ sC $ f a b
@@ -123,11 +123,11 @@ withThree ::
   String ->
   InputT IO (Maybe String)
 withThree f rA rB rC sD (prt1, prt2) str1 = rA str1 >>== \a -> do
-  minput2 <- getColoredInputLine $ prompt '=' prt1
+  minput2 <- getColoredInputLine $ prompt ' ' prt1
   mstr2 <- minput2 >>== eval RETURN
   let mb = mstr2 >>= rB
   mb >>== \b -> do
-    minput3 <- getColoredInputLine $ prompt '=' prt2
+    minput3 <- getColoredInputLine $ prompt ' ' prt2
     mstr3 <- minput3 >>== eval RETURN
     let mc = mstr3 >>= rC
     mc >>== \c -> printLn $ Just $ sD $ f a b c

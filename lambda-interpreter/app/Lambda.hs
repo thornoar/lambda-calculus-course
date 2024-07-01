@@ -111,6 +111,9 @@ combinatorS = parseJust "\\x,y,z.xz(yz)"
 combinatorY :: Lambda
 combinatorY = parseJust "\\f.(\\x.f(xx))(\\x.f(xx))"
 
+combinatorOmega :: Lambda
+combinatorOmega = parseJust "(\\x.xx)(\\x.xx)"
+
 church :: Int -> Lambda
 church 0 = adjustBoundVars $ Abst 0 combinatorI
 church n = adjustBoundVars $ Abst 0 $ Abst 1 $ Appl (Var 0) $ Appl (Appl (church (n-1)) (Var 0)) (Var 1)
@@ -155,6 +158,7 @@ preprocess ('c':'P':'r':'e':'v':rest) = "(" ++ unparse prevChurch ++ ")" ++ prep
 preprocess ('b':'P':'r':'e':'v':rest) = "(" ++ unparse prevBarend ++ ")" ++ preprocess rest
 preprocess ('S' : rest) = "(" ++ unparse combinatorS ++ ")" ++ preprocess rest
 preprocess ('Y' : rest) = "(" ++ unparse combinatorY ++ ")" ++ preprocess rest
+preprocess ('O' : rest) = "(" ++ unparse combinatorOmega ++ ")" ++ preprocess rest
 preprocess (char:'_':rest)
   | char == 'c' = "(" ++ unparse (church num) ++ ")" ++ preprocess (drop (length strNum) rest)
   | char == 'b' = "(" ++ unparse (barend num) ++ ")" ++ preprocess (drop (length strNum) rest)

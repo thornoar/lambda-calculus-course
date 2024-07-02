@@ -4,7 +4,6 @@ import Control.Monad
 import Data.Char (isAlpha, isDigit)
 import Data.List (elemIndex, nub)
 import Data.Maybe
--- import Data.Set (Set, delete, empty, insert, intersection, member, notMember, singleton, toList, fromList, union)
 
 maximum' :: (Ord a, Num a) => [a] -> a
 maximum' [] = 0

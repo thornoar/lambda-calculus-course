@@ -5,16 +5,16 @@ import System.Console.Haskeline
 import System.Environment (getArgs)
 import Data.Map (Map, empty, insert, member, notMember, (!))
 import Text.Read (readMaybe)
-import Data.Maybe (isNothing)
-import Control.Monad (when)
 
 -- ┌─────────────────────┐
 -- │ Command definitions │
 -- └─────────────────────┘
 
 data Mode =
-  RETURN | REPEAT | PRINT | REDUCE | SUBS | STEPS | CONGR | EQUIV | SHOW | READ | TOFORMAL | TOINFORMAL | FORMAT
+  RETURN | REPEAT | PRINT | REDUCE | SUBS | STEPS | CONGR | EQUIV | SHOW | READ | TOFORMAL | TOINFORMAL | FORMAT | LET | WHERE | ASSIGN
   deriving (Read, Show)
+
+type Action = InputT IO (Maybe String)
 
 mapFromList :: (Ord a) => [(a, a, b, a)] -> Map a b
 mapFromList [] = empty
@@ -37,7 +37,10 @@ commandList = [
     ("rd", "read", READ, "evaluates a given internal representation and prints it"),
     ("tf", "toformal", TOFORMAL, "converts to the formal notation"),
     ("ti", "toinformal", TOINFORMAL, "converts to the informal notation"),
-    ("fm", "format", FORMAT, "adjusts the bound variables to avoid collisions")
+    ("fm", "format", FORMAT, "adjusts the bound variables to avoid collisions"),
+    ("lt", "let", LET, "allows to set a binding, order (binding, expression)"),
+    ("wh", "where", WHERE, "allows to set a binding, order (expression, binding)"),
+    ("as", "assign", ASSIGN, "a three-step action similar to LET and WHERE, but allows piping into bindings")
   ]
 
 commandMap :: Map String Mode
@@ -56,9 +59,6 @@ splitByFirstSpace [] = Nothing
 splitByFirstSpace (' ':_) = Just 0
 splitByFirstSpace (_:rest) = (+ 1) <$> splitByFirstSpace rest
 
-color :: String -> String -> String
-color typ str = "\ESC[" ++ typ ++ "m" ++ str ++ "\ESC[0m"
-
 calibrateLengthPost :: Int -> Char -> String -> String
 calibrateLengthPost n rep str
   | len > n = str
@@ -73,14 +73,37 @@ calibrateLengthPre n rep str
   where
     len = length str
 
+replaceChar :: (Char, String) -> String -> String
+replaceChar _ [] = []
+replaceChar (from, to) (char:rest)
+  | char == from = "(" ++ to ++ ")" ++ replaceChar (from, to) rest
+  | otherwise = char : replaceChar (from, to) rest
+
+parseSubs :: String -> Maybe (Char, String)
+parseSubs = parseSubs' . removeSpaces
+  where
+    removeSpaces :: String -> String
+    removeSpaces [] = []
+    removeSpaces (' ':rest) = removeSpaces rest
+    removeSpaces (char:rest) = char : removeSpaces rest
+    parseSubs' :: String -> Maybe (Char, String)
+    parseSubs' [] = Nothing
+    parseSubs' (char:rest)
+      | null rest = Nothing
+      | '=' /= head rest = Nothing
+      | otherwise = Just (char, tail rest)
+
+color :: String -> String -> String
+color typ str = "\ESC[" ++ typ ++ "m" ++ str ++ "\ESC[0m"
+
 promptLength :: Int
-promptLength = 15
+promptLength = 16
 
 prompt :: Char -> String -> String
-prompt rep body = "\ESC[0m(" ++ color "33" body ++ ") " ++ replicate n rep ++ ": \ESC[34m"
+prompt rep body = "(" ++ color "33" body ++ ") " ++ replicate n rep ++ ": \ESC[34m"
   where n = promptLength - length body - 5
 
-getColoredInputLine :: String -> InputT IO (Maybe String)
+getColoredInputLine :: String -> Action
 getColoredInputLine pref = do
   res <- getInputLine pref
   outputStr "\ESC[0m"
@@ -90,13 +113,13 @@ getColoredInputLine pref = do
 -- │ Evaluating and returning output │
 -- └─────────────────────────────────┘
 
-printGeneral :: (String -> InputT IO ()) -> Maybe String -> InputT IO (Maybe String)
+printGeneral :: (String -> InputT IO ()) -> Maybe String -> Action
 printGeneral _ Nothing = return Nothing
 printGeneral f (Just str) = do
   f . ("| " ++) . color "34" $ str
   return $ Just str
 
-printLn :: Maybe String -> InputT IO (Maybe String)
+printLn :: Maybe String -> Action
 printLn = printGeneral outputStrLn
 
 withTwo ::
@@ -106,12 +129,12 @@ withTwo ::
   (c -> String) ->
   String ->
   String ->
-  InputT IO (Maybe String)
-withTwo f rA rB sC prt str1 = rA str1 >>== \a -> do
+  Action
+withTwo f readA readB showC prt str1 = readA str1 >>== \a -> do
   minput <- getColoredInputLine $ prompt ' ' prt
   mstr2 <- minput >>== eval RETURN
-  let mb = mstr2 >>= rB
-  mb >>== \b -> printLn $ Just $ sC $ f a b
+  let mb = mstr2 >>= readB
+  mb >>== \b -> printLn $ Just $ showC $ f a b
 
 withThree ::
   (a -> b -> c -> d) ->
@@ -121,18 +144,18 @@ withThree ::
   (d -> String) ->
   (String, String) ->
   String ->
-  InputT IO (Maybe String)
-withThree f rA rB rC sD (prt1, prt2) str1 = rA str1 >>== \a -> do
+  Action
+withThree f readA readB readC showC (prt1, prt2) str1 = readA str1 >>== \a -> do
   minput2 <- getColoredInputLine $ prompt ' ' prt1
   mstr2 <- minput2 >>== eval RETURN
-  let mb = mstr2 >>= rB
+  let mb = mstr2 >>= readB
   mb >>== \b -> do
     minput3 <- getColoredInputLine $ prompt ' ' prt2
     mstr3 <- minput3 >>== eval RETURN
-    let mc = mstr3 >>= rC
-    mc >>== \c -> printLn $ Just $ sD $ f a b c
+    let mc = mstr3 >>= readC
+    mc >>== \c -> printLn $ Just $ showC $ f a b c
 
-evalOnce :: Mode -> String -> InputT IO (Maybe String)
+evalOnce :: Mode -> String -> Action
 evalOnce RETURN = return . Just
 evalOnce REPEAT = printLn . Just
 evalOnce PRINT = printLn . fmap unparse' . parse'
@@ -146,10 +169,10 @@ evalOnce SUBS = withThree substitute parse' getVar parse' unparse' ("VAR", "EXPR
       where mexpr = parse' str
 evalOnce STEPS = print' . parse'
   where
-    print' :: Maybe Lambda -> InputT IO (Maybe String)
+    print' :: Maybe Lambda -> Action
     print' Nothing = return Nothing
     print' (Just l) = showSteps l
-    showSteps :: Lambda -> InputT IO (Maybe String)
+    showSteps :: Lambda -> Action
     showSteps l = do
       let lstr = Just $ unparse' l
       _ <- printGeneral outputStr lstr
@@ -168,6 +191,15 @@ evalOnce READ = printLn . fmap unparse' . readMaybe
 evalOnce TOFORMAL = printLn . fmap unparseFormal . parse'
 evalOnce TOINFORMAL = printLn . fmap unparse' . parse'
 evalOnce FORMAT = printLn . fmap (unparse . adjustBoundVars) . parse'
+evalOnce LET = withTwo replaceChar parseSubs Just id "IN"
+evalOnce WHERE = withTwo (flip replaceChar) Just parseSubs id "WITH"
+evalOnce ASSIGN = withThree (flip . curry $ replaceChar) Just extractChar Just id ("ASSIGN TO", "IN")
+  where
+    extractChar :: String -> Maybe Char
+    extractChar [] = Nothing
+    extractChar (char:rest)
+      | null rest = Just char
+      | otherwise = Nothing
 
 -- ┌────────────────┐
 -- │ Error handling │
@@ -186,7 +218,7 @@ printInputError = printError "Incorrect input"
 -- │ Command piping and mode changing │
 -- └──────────────────────────────────┘
 
-handleCommand :: String -> (Mode -> String -> InputT IO (Maybe String)) -> InputT IO (Maybe String)
+handleCommand :: String -> (Mode -> String -> Action) -> Action
 handleCommand str f = do
   let mn = splitByFirstSpace str
   mn >>== \n -> do
@@ -196,12 +228,12 @@ handleCommand str f = do
     then return Nothing
     else f (commandMap ! cmd) str'
 
-pipe :: Mode -> Mode -> String -> InputT IO (Maybe String)
+pipe :: Mode -> Mode -> String -> Action
 pipe basemode curmode str = do
   val <- eval curmode str
   val >>== evalOnce basemode
 
-eval :: Mode -> String -> InputT IO (Maybe String)
+eval :: Mode -> String -> Action
 eval mode str = case str of
   [] -> return Nothing
   (' ':rest) -> eval mode rest
@@ -226,7 +258,9 @@ loop mode = do
         loop mode
     Just input -> do
       val <- eval mode input
-      when (isNothing val) $ printError "Exception while processing input"
+      case val of
+        Nothing -> printError "Exception while processing input"
+        _ -> return ()
       loop mode
 
 -- ┌───────────────────┐

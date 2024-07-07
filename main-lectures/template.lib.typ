@@ -1,23 +1,59 @@
-#let formatting = doc => {
+#import "@preview/quick-maths:0.1.0": shorthands
+
+// shortcut definitions
+#let l = math.lambda
+#let L = math.Lambda
+#let impl = $#h(5pt) => #h(5pt)$
+
+#let formatting(bg: true) = doc => {
+  let setbg = none
+  if (bg) {
+    setbg = image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch")
+  }
   set page(
     "a4",
     margin: (x: 0.5in, y: 0.5in),
     numbering: none,
-    background: image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch")
+    background: setbg
   )
   set text(12pt, lang: "ru")
   show "л-": name => $lambda"-"$
+
+  set heading(numbering: "1.1.")
+  show heading.where(level:1): it => {
+    counter(math.equation).update(0)
+    it
+  }
+  // set math.equation(numbering: n => {
+  //   let h1 = counter(heading).get().first()
+  //   numbering("(1.1.1)", h1, n)
+  // }, supplement: "Equation")
+  show: shorthands.with(
+    // ($>=$, math.gt.eq.slant),
+    ($==>$, $#h(5pt) arrow.r.double #h(5pt)$),
+    ($..$, $.#h(3pt)$),
+    ($\\$, $lambda$)
+    // ($<=$, math.lt.eq.slant)
+  )
+
+  show outline.entry.where(level: 1): it => {
+    v(1em, weak: true)
+    strong(it)
+  }
+
+  set outline(indent: auto, fill: repeat([.#h(3pt)]))
+  set figure(gap: 1.5em)
 
   doc
 }
 
 #let head(str) = align(center)[
-  = #str
+  #text(18pt)[*#str*]\
   #text(14pt)[_$lambda$-исчисление, 2024_]
 ]
 
 #let problemlist(num, title) = doc => {
-  show: formatting
+  show: formatting(bg: true)
   set enum(numbering: n => [ *Задача #num.#n.* ])
 
   head([ Лист №#num. #title ])

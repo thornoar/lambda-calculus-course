@@ -6,8 +6,8 @@
 
 #import "@preview/cetz:0.2.2" as cz
 
-#set list(indent: 0.1in)
-// #set enum(indent: 0.1in)
+// #set list(indent: 0.1in)
+#set enum(numbering: n => strong([#n.]))
 #set page(numbering: "1")
 
 #let myplainstyle(ident, head, ..args) = thmstyle(ident, head, titlefmt: it => strong(underline(it)), ..args)
@@ -18,7 +18,7 @@
 #let note = myplainstyle("note", "Замечание")
 #let nota = myplainstyle("notation", "Нотация", numbering: none)
 #let exam = myplainstyle("example", "Пример")
-#let exer = myplainstyle("exercise", "Упражнение")
+#let exer = myplainstyle("exercise", "Упражнение", numbering: none)
 #let th = mystatestyle("theorem", "Теорема")
 #let lm = mystatestyle("lemma", "Лемма")
 #let state = mystatestyle("statement", "Утверждение")
@@ -463,5 +463,26 @@
       $P Q$, $P[...]Q[...]$, $P[...']Q[...']$, "предп. инд.",
       $>y.. P$, $>y.. P[...]$, $>y.. P[...']$, "аналогично"
     ))
-  + $M arr M' <== >y.. P arr >y.. P'$, прямое следствие $P arr P'$.
+  + $M arr M' <== >y.. P arr >y.. P'$, прямое следствие $P arr P'$. По предположению индукции имеем $P[x := N] arr P'[x := N']$, а тогда $>y.. P[x := N] arr >y.. P'[x := N']$, что и требовалось доказать.
+  + $M arr M' <== P Q arr P'Q'$, где $P arr P'$ и $Q arr Q'$. Тогда имеем
+    $
+      M[x := N] &== P[x := N]Q[x := N]\
+                &arr P'[x := N']Q'[x := N']\
+                &== M'[x := N'].
+    $
+  + $M arr M' <== (>y.. P)Q arr P'[x := Q']$, где $P arr P'$, $Q arr Q'$. Тогда
+    $
+      M[x := N] &== (>y.. P[x := N])(Q[x := N])\
+                &arr P'[x := N'][y := Q'[x := N']]\
+                &== P'[y := Q'][x := N']\
+                &== M'[x := N'].
+    $
+  q.e.d.
+]
+
+#lm[
+  + $>x.. M arr N$ влечёт $N == >x.. M'$, где $M arr M'$;
+  + $M N arr L$ влечёт либо
+    - $L == M'N'$, где $M arr M'$ и $N arr N'$, либо
+    - $M == >x.. P,, L == P'[x := N']$, где $P arr P',, N arr N'$.
 ]

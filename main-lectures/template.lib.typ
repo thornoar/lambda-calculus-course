@@ -1,39 +1,65 @@
 #import "@preview/quick-maths:0.1.0": shorthands
+// #import "@preview/ouset:0.2.0": *
 
-// shortcut definitions
+// Shortcut definitions
+
 #let l = math.lambda
+#let be = $beta eta$
 #let L = math.Lambda
 #let impl = $#h(5pt) => #h(5pt)$
+#let conv = math.tilde.eq
+#let proves = $#l tack.r$
+#let TV(expr) = $"TV"(#expr)$
+#let FV(expr) = $"FV"(#expr)$
+#let BV(expr) = $"BV"(#expr)$
+#let Sub(expr) = $"Sub"(#expr)$
+#let Con(expr) = $"Con"(#expr)$
+#let CR(expr) = $"CR"(#expr)$
+#let Gr(expr) = $"Gr"(#expr)$
+#let empty = math.diameter
+#let acongr = $eq^alpha$
+#let inc = math.op("#")
+#let rel = math.subset.sq
+#let rrel = math.supset.sq
 
-#let formatting(bg: true) = doc => {
-  let setbg = none
-  if (bg) {
-    setbg = image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch")
-  }
+#let combinator = it => math.bold(math.upright(math.sans(it)))
+#let I = combinator([I])
+#let K = combinator([K])
+#let KK = combinator($K_*$)
+#let S = combinator([S])
+#let Y = combinator([Y])
+#let O = combinator(math.Omega)
+
+#let formatting = doc => {
   set page(
     "a4",
     margin: (x: 0.5in, y: 0.5in),
-    numbering: none,
-    background: setbg
+    numbering: none
   )
   set text(12pt, lang: "ru")
   show "л-": name => $lambda"-"$
+  show "ал-": name => $alpha"-"$
+  show "бэ-": name => $be"-"$
+  show "б-": name => $beta"-"$
+  show "эт-": name => $eta"-"$
 
   set heading(numbering: "1.1.")
   show heading.where(level:1): it => {
     counter(math.equation).update(0)
     it
   }
-  // set math.equation(numbering: n => {
-  //   let h1 = counter(heading).get().first()
-  //   numbering("(1.1.1)", h1, n)
-  // }, supplement: "Equation")
   show: shorthands.with(
-    // ($>=$, math.gt.eq.slant),
+    ($>=$, math.gt.eq.slant),
+    ($<=$, math.lt.eq.slant),
     ($==>$, $#h(5pt) arrow.r.double #h(5pt)$),
-    ($..$, $.#h(3pt)$),
-    ($\\$, $lambda$)
-    // ($<=$, math.lt.eq.slant)
+    ($<==$, $#h(5pt) arrow.l.double #h(5pt)$),
+    ($,,$, $,#h(5pt)$),
+    ($>$, math.lambda),
+    ($~~$, math.tilde),
+    ($==$, math.equiv),
+    ($!==$, math.equiv.not),
+    ($,.$, $,#h(.5pt)$),
+    ($..$, $.#h(3pt)$)
   )
 
   show outline.entry.where(level: 1): it => {
@@ -53,7 +79,8 @@
 ]
 
 #let problemlist(num, title) = doc => {
-  show: formatting(bg: true)
+  show: formatting
+  set page(background: image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch"))
   set enum(numbering: n => [ *Задача #num.#n.* ])
 
   head([ Лист №#num. #title ])
@@ -64,43 +91,19 @@
 
 #import "@preview/fletcher:0.4.5" as fletcher: diagram, node, edge
 
-#let lnode(A) = node(A, shape: circle, fill: black, radius: 0.1cm)
-// #let ledge(A,B,bnd) = edge(A, B, marks: (none, "straight"), bend: bnd)
-// #let sedge(A) = edge(A, A, marks: ("straight", none), bend: -160deg)
-#let ledge(A,B,bnd) = edge(A, B, marks: "->", bend: bnd)
-#let sedge(A) = edge(A, A, marks: "->", bend: -160deg)
+#let lnode(A, radius: 0.06cm) = node(A, shape: circle, fill: black, radius: radius)
+#let ledge(A,B,bend) = edge(A, B, marks: "stealth-stealth", bend: bend)
+#let add((a,b),(c,d)) = (a+c, b+d)
+#let mult(r, (a,b)) = (r*a, r*b)
+#let self(A, angle: -90deg, bend: -160deg) = edge(A, add(A, mult(0.001,(calc.cos(angle+90deg), calc.sin(angle+90deg)))), marks: "stealth-stealth", bend: bend)
 
-#let lambda-diagram(space,block) = {
+#let lambda-diagram(spacing, block) = {
   diagram(
     axes: (ltr,btt),
-    spacing: space,
+    spacing: spacing,
     node-stroke: none,
     edge-stroke: 0.7pt,
-    node-outset: 5pt,
+    node-outset: 3pt,
     block
   )
 }
-
-// #lambda-diagram(3cm, {
-//   let (A,B,C) = ((0,0),(1,0),(2,0))
-//   let bnd = 40deg
-//   for x in (A,B,C) { lnode(x) }
-//   sedge(A)
-//   ledge(A, B, bnd)
-//   sedge(B)
-//   ledge(B, C, bnd)
-// })
-//
-// #lambda-diagram(2cm, {
-//   let arr = ((-1,0),(0,1),(1,0),(0,-1))
-//   let bnd = -10deg
-//   let epsilon = 0.00001
-//   let mult(num, (a,b)) = (a*num, b*num)
-//   let sum((a,b),(c,d)) = (a+c, b+d)
-//   for i in (0,1,2,3) {
-//     let x = arr.at(i)
-//     lnode(x)
-//     ledge(arr.at(i), arr.at(calc.rem(i+1,4)), bnd)
-//     ledge(x, sum(x, mult(epsilon, arr.at(calc.rem(i+1,4)))), 150deg)
-//   }
-// })

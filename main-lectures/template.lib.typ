@@ -1,5 +1,5 @@
 #import "@preview/quick-maths:0.1.0": shorthands
-// #import "@preview/ouset:0.2.0": *
+#import "@preview/ouset:0.2.0": *
 
 // Shortcut definitions
 
@@ -16,11 +16,21 @@
 #let Con(expr) = $"Con"(#expr)$
 #let CR(expr) = $"CR"(#expr)$
 #let Gr(expr) = $"Gr"(#expr)$
+#let Trans(expr) = $"Trans"lr((#expr), size: #0.5cm)$
+#let Equiv(expr) = $"Equiv"lr((#expr), size: #0.5cm)$
+#let Refl(expr) = $"Refl"lr((#expr), size: #0.5cm)$
+#let Preord(expr) = $"Preord"lr((#expr), size: #0.5cm)$
 #let empty = math.diameter
 #let acongr = $eq^alpha$
 #let inc = math.op("#")
-#let rel = math.subset.sq
-#let rrel = math.supset.sq
+#let rrel = math.subset.sq
+#let rrel1 = math.attach(rrel, br: [1])
+#let rrel2 = math.attach(rrel, br: [2])
+#let rel = math.supset.sq
+#let rel1 = math.attach(rel, br: [1])
+#let rel2 = math.attach(rel, br: [2])
+#let rel3 = math.attach(rel, br: [3])
+#let rel4 = math.attach(rel, br: [4])
 
 #let combinator = it => math.bold(math.upright(math.sans(it)))
 #let I = combinator([I])
@@ -97,13 +107,26 @@
 #let mult(r, (a,b)) = (r*a, r*b)
 #let self(A, angle: -90deg, bend: -160deg) = edge(A, add(A, mult(0.001,(calc.cos(angle+90deg), calc.sin(angle+90deg)))), marks: "stealth-stealth", bend: bend)
 
-#let lambda-diagram(spacing, block) = {
+#let lambda-diagram(spacing: 1cm, block) = {
   diagram(
     axes: (ltr,btt),
     spacing: spacing,
     node-stroke: none,
     edge-stroke: 0.7pt,
-    node-outset: 3pt,
+    node-outset: 0pt,
     block
   )
+}
+
+#let diamond-diagram(prepad: -15pt, spacing: 1cm, r1, r2, r3, r4) = {
+  v(prepad)
+  align(center, lambda-diagram(
+    spacing: spacing,
+    {
+      edge((0,0), (2,0), "-", label: r1, label-side: left)
+      edge((0,0), (0,-1), "-", label: r2, label-side: right)
+      edge((0,-1), (2,-1), "--", label: r3, label-side: right)
+      edge((2,0), (2,-1), "--", label: r4, label-side: left)
+    }
+  ))
 }

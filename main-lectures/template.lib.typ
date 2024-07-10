@@ -7,7 +7,7 @@
 #let be = $beta eta$
 #let L = math.Lambda
 #let impl = $#h(5pt) => #h(5pt)$
-#let conv = math.tilde.eq
+// #let conv = math.tilde.eq
 #let proves = $#l tack.r$
 #let TV(expr) = $"TV"(#expr)$
 #let FV(expr) = $"FV"(#expr)$
@@ -31,14 +31,26 @@
 #let rel2 = math.attach(rel, br: [2])
 #let rel3 = math.attach(rel, br: [3])
 #let rel4 = math.attach(rel, br: [4])
+#let ul = symbol("\u{231c}")
+#let ur = symbol("\u{231d}")
+#let num(expr) = $ul #expr ur $
+#let nums(expr) = $#h(3pt) ul #expr ur #h(3pt)$
+#let ite(b, m, n) = $underline("if") #h(5pt) #b #h(5pt) underline("then") #h(5pt) #m #h(5pt) underline("else") #h(5pt) #n$
 
 #let combinator = it => math.bold(math.upright(math.sans(it)))
 #let I = combinator([I])
 #let K = combinator([K])
+#let T = combinator([T])
 #let KK = combinator($K_*$)
+#let F = combinator([F])
 #let S = combinator([S])
 #let Y = combinator([Y])
+#let Th = combinator(math.Theta)
 #let O = combinator(math.Omega)
+#let P = combinator([P])
+#let Sp = combinator($S^+$)
+#let Pm = combinator($P^-$)
+#let Zero = combinator([Zero])
 
 #let formatting = doc => {
   set page(
@@ -61,10 +73,12 @@
   show: shorthands.with(
     ($>=$, math.gt.eq.slant),
     ($<=$, math.lt.eq.slant),
+    ($<<$, math.angle.l),
+    ($>>$, math.angle.r),
     ($==>$, $#h(5pt) arrow.r.double #h(5pt)$),
     ($<==$, $#h(5pt) arrow.l.double #h(5pt)$),
     ($,,$, $,#h(5pt)$),
-    ($>$, math.lambda),
+    ($::$, math.lambda),
     ($~~$, math.tilde),
     ($==$, math.equiv),
     ($!==$, math.equiv.not),

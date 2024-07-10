@@ -1,0 +1,25 @@
+barendregt:
+  type: Book
+  title: "The Lambda calculus: its syntax and semantics"
+  author: Barendregt H. P.
+  volume: 103
+  page-total: 640
+  date: 1984
+
+barendregt-intro:
+  type: Book
+  title: "Introduction to Lambda calculus"
+  author:
+    - Barendregt H. P.
+    - Barendsen E.
+  page-total: 53
+  date: 2000
+
+hindley:
+  type: Book
+  title: "Lambda-calculus and combinators, an introduction"
+  author:
+    - J. Roger Hindley
+    - Jonathan P. Seldin
+  page-total: 359
+  date: 2008

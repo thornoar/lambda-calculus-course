@@ -36,8 +36,14 @@
 #let num(expr) = $ul #expr ur $
 #let nums(expr) = $#h(3pt) ul #expr ur #h(3pt)$
 #let ite(b, m, n) = $underline("if") #h(5pt) #b #h(5pt) underline("then") #h(5pt) #m #h(5pt) underline("else") #h(5pt) #n$
+#let A = $cal(A)$
+#let B = $cal(B)$
+#let arr = math.arrow.r.squiggly
 
 #let combinator = it => math.bold(math.upright(math.sans(it)))
+#let Ap = combinator($A_+$)
+#let Am = combinator($A_*$)
+#let Ae = combinator($A_("exp")$)
 #let I = combinator([I])
 #let K = combinator([K])
 #let T = combinator([T])
@@ -104,7 +110,7 @@
 
 #let problemlist(num, title) = doc => {
   show: formatting
-  set page(background: image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch"))
+  set page(background: image("pictures/troubles-normal.jpg", width: 100%, height: 100%, fit: "stretch"))
   set enum(numbering: n => [ *Задача #num.#n.* ])
 
   head([ Лист №#num. #title ])

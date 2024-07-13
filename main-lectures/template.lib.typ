@@ -15,6 +15,7 @@
 #let Sub(expr) = $"Sub"(#expr)$
 #let Con(expr) = $"Con"(#expr)$
 #let CR(expr) = $"CR"(#expr)$
+#let SN(expr) = $"SN"(#expr)$
 #let Gr(expr) = $"Gr"(#expr)$
 #let Trans(expr) = $"Trans"lr((#expr), size: #0.5cm)$
 #let Equiv(expr) = $"Equiv"lr((#expr), size: #0.5cm)$
@@ -84,11 +85,11 @@
     ($==>$, $#h(5pt) arrow.r.double #h(5pt)$),
     ($<==$, $#h(5pt) arrow.l.double #h(5pt)$),
     ($,,$, $,#h(5pt)$),
-    ($::$, math.lambda),
+    ($@$, math.lambda),
     ($~~$, math.tilde),
     ($==$, math.equiv),
     ($!==$, math.equiv.not),
-    ($,.$, $,#h(.5pt)$),
+    ($%$, $,#h(.5pt)$),
     ($..$, $.#h(3pt)$)
   )
 
@@ -111,7 +112,11 @@
 #let problemlist(num, title) = doc => {
   show: formatting
   set page(background: image("pictures/troubles-normal.jpg", width: 100%, height: 100%, fit: "stretch"))
-  set enum(numbering: n => [ *Задача #num.#n.* ])
+  // set enum(numbering: n => [ *Задача #num.#n.* ])
+  // set enum(numbering: n => [ *(#num.#n)* ])
+  set enum(numbering: n => [ #num.#n. ])
+  // set enum(numbering: n => [ *#num.#n.* ])
+  // set enum(numbering: "1.")
 
   head([ Лист №#num. #title ])
   doc
@@ -121,11 +126,11 @@
 
 #import "@preview/fletcher:0.4.5" as fletcher: diagram, node, edge
 
-#let lnode(A, radius: 0.06cm) = node(A, shape: circle, fill: black, radius: radius)
-#let ledge(A,B,bend) = edge(A, B, marks: "stealth-stealth", bend: bend)
+#let lnode(A, radius: 0.06cm) = node(A, shape: circle, fill: black, radius: radius, outset: 2*radius)
+#let ledge(A, B, bend: 0deg, marks:"-stealth") = edge(A, B, marks: marks, bend: bend)
 #let add((a,b),(c,d)) = (a+c, b+d)
 #let mult(r, (a,b)) = (r*a, r*b)
-#let self(A, angle: -90deg, bend: -160deg) = edge(A, add(A, mult(0.001,(calc.cos(angle+90deg), calc.sin(angle+90deg)))), marks: "stealth-stealth", bend: bend)
+#let self(A, angle: -90deg, bend: -160deg, marks: "stealth-") = edge(A, add(A, mult(0.001,(calc.cos(angle+90deg), calc.sin(angle+90deg)))), marks: marks, bend: bend)
 
 #let lambda-diagram(spacing: 1cm, block) = {
   diagram(

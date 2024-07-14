@@ -89,6 +89,14 @@ f n = n*2
 g :: Bool -> Int -> Int -- (Bool -> (Int -> Int))
 g switch n = if switch then n*2 else n*3 -- (if [bool] then [type] else [same type])
 
+-- pattern matching
+g True n = n*2
+g False n = n*3
+
+-- lambda expressions
+g True = \n -> n*2
+g False = \n -> n*3
+
 (g True) = f -- currying
 ```
 В Haskell *нет* циклов, но есть _рекурсия:_
@@ -116,4 +124,11 @@ g switch n = if switch then n*2 else n*3 -- (if [bool] then [type] else [same ty
 #line(length: 100%)
 Упражнения:
 
-- 
+- Написать функцию `f :: Float -> Float`, имеющую следующий график:
+#align(center, [
+  #image("figures/day-2-exercise-1.svg")
+])
+
+- Написать функцию `fib :: Int -> Int`, возвращающую $n$-ное число Фибоначчи.
+
+- Написать функцию `power :: Int -> (Float -> Float)`, которая по натуральному числу $n$ возвращает функцию $x |-> x^n$, тремя разными способами.

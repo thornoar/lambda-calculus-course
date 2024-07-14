@@ -7,7 +7,6 @@
 #let be = $beta eta$
 #let L = math.Lambda
 #let impl = $#h(5pt) => #h(5pt)$
-// #let conv = math.tilde.eq
 #let proves = $#l tack.r$
 #let TV(expr) = $"TV"(#expr)$
 #let FV(expr) = $"FV"(#expr)$

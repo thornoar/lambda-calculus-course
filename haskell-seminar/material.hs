@@ -1,7 +1,23 @@
+-- $intro
+-- ┌──────────────┐
+-- │ Introduction │
+-- └──────────────┘
+
+{-
+
+Haskell по пунктам:
+
+-- Чисто функциональный: нет понятия состояния, 
+
+-}
+
+
 -- $basic
 -- ┌────────────────────┐
 -- │ Basic introduction │
 -- └────────────────────┘
+
+import Control.Applicative
 
 fib :: Int -> Int
 fib 0 = 1
@@ -31,3 +47,8 @@ elemIndex a as
     findIndex a (b:bs) n
       | a == b = n
       | otherwise = findIndex a bs (n+1)
+
+-- [TODO]
+safeDivide :: Int -> Int -> Maybe Int
+safeDivide _ 0 = Nothing
+safeDivide n m = Just (n `div` m)

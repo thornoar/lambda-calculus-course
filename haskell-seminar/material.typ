@@ -132,3 +132,86 @@ g False = \n -> n*3
 - Написать функцию `fib :: Int -> Int`, возвращающую $n$-ное число Фибоначчи.
 
 - Написать функцию `power :: Int -> (Float -> Float)`, которая по натуральному числу $n$ возвращает функцию $x |-> x^n$, тремя разными способами.
+
+#pagebreak()
+
+= Списки
+
+$
+  forall a in "Hask": hs hs exists [a] in "Hask"
+$
+
+#columns(2)[
+  ```haskell
+  l1 :: [Int]
+  l1 = [1,2,3,4,5] -- simple declaration
+
+  l2 :: [Int]
+  l2 = [0..20] -- ranges
+
+  l3 = l1 ++ l2 -- concatenation
+  l4 = 100 : l3 -- prepending an element
+
+  n :: Int
+  n = l4 !! 30 -- element at an index
+
+  l5 :: [Int]
+  l5 = [0..] -- infinite (due to laziness)
+  ```
+  #colbreak()
+  ```haskell
+  head :: [a] -> a
+  tail :: [a] -> [a]
+  last :: [a] -> a
+  init :: [a] -> [a]
+  length :: [a] -> Int
+  null :: [a] -> Bool
+  reverse :: [a] -> [a]
+  take :: Int -> [a] -> [a]
+  drop :: Int -> [a] -> [a]
+  maximum :: (Num a) => [a] -> a
+  minimum :: (Num a) => [a] -> a
+  sum :: (Num a) => [a] -> a
+  product :: (Num a) => [a] -> a
+  elem :: (Eq a) => a -> [a] -> Bool
+  ```
+]
+
+В Haskell есть механизм "аксиомы выделения":
+
+```haskell
+l6 :: [Int]
+l6 = [n^2 | x <- l5, x `mod` 2 == 0] -- list comprehension
+```
+
+Упражнения:
+- Написать #hs `quicksort :: (Eq a) => [a] -> [a]`
+- Написать #hs `zw :: (a -> a -> b) -> [a] -> [a] -> [b]` двумя разными способами.
+- Написать #hs `length'`, не используя `length`.
+- Написать #hs `intersection`
+- Написать #hs `removeNonUppercase`
+
+#pagebreak()
+
+= Кортежи
+
+$
+  forall a,b in "Hask": hs hs exists (a,b) in "Hask".
+$
+
+```haskell
+(1.0,0.0) :: (Float, Float)
+(1,True,'z') :: (Int, Bool, Char)
+
+fst :: (a,b) -> a
+snd :: (a,b) -> b
+```
+
+Упражнения:
+- Написать #hs `zip' :: [a] -> [b] -> [(a,b)]`
+- Написать #hs `curry` и `uncurry`.
+- Определить список натуральных чисел меньше 10, удовлетворяющих теореме Пифагора.
+
+#pagebreak()
+
+= Типчики и классы

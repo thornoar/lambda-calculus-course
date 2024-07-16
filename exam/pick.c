@@ -60,8 +60,13 @@ int main () {
             name[--len] = '\0';
         }
 
-        if (feof(stdin) || strcmp(name, "quit\n") == 0) {
+        if (feof(stdin) || strcmp(name, "quit") == 0) {
             close();
+        }
+
+        if (strcmp(name, "clear") == 0) {
+            printf("\ec");
+            goto nextprompt;
         }
 
         int found = 0;
@@ -69,6 +74,7 @@ int main () {
         for (int i = 0; i < sizeof(names)/sizeof(*names); i++) {
             if (strcmp(name, names[i]) == 0) {
                 found = 1;
+                printf("| \e[34mFound student.\e[0m\n"); // ]]
                 for (int j = 0; j < num_of_sheets; j++) {
                     int count = 0;
                     for (int k = 0; k < num_of_problems; k++) {

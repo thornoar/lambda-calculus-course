@@ -110,7 +110,7 @@
 
 #let problemlist(num, title) = doc => {
   show: formatting
-  set page(background: image("pictures/troubles-normal.jpg", width: 100%, height: 100%, fit: "stretch"))
+  set page(background: image("pictures/troubles-faded.jpg", width: 100%, height: 100%, fit: "stretch"))
   // set enum(numbering: n => [ *Задача #num.#n.* ])
   // set enum(numbering: n => [ *(#num.#n)* ])
   set enum(numbering: n => [ #num.#n. ])

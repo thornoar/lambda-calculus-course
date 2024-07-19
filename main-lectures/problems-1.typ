@@ -147,8 +147,8 @@
     [
       Подсказка: найдите выражения $C$. $D$ такие, что
       $
-        C x -> delta x (C x),\
-        D -> C D.
+        C x ->> delta x (C x),\
+        D ->> C D.
       $
       Докажите, что $D ->> epsilon$ и $D ->> C epsilon$, но у $epsilon$ и $C epsilon$ нет общего редукта.
     ]
@@ -163,6 +163,8 @@
 + Рассмотрим
   $
     "SN"_0 &:= { M in #L | SN(M) },\
-    "SN"_1 &:= { M in #L | forall N_1, N_2, ..., N_k in "SN"_0: hs M N_1 N_2 ... N_k in "SN"_0 }.
+    "SN"_(n+1) &:= { M in #L | forall N_1, N_2, ..., N_k in "SN"_n: hs M N_1 N_2 ... N_k in "SN"_n }.
   $
-  Докажите, что $"SN"_1 subset.not "SN"_0$.
+  Докажите, что\
+  [a]#hs $"SN"_1 subset "SN"_0$, но $"SN"_1 eq.not "SN"_0$.\
+  [b]#hs $"SN"_1 = "SN"_2 = "SN"_3 = ...$

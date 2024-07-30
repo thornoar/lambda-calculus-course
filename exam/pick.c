@@ -8,20 +8,44 @@ void close () {
     exit(0);
 }
 
+float rating (float score) {
+    return 1 - pow(score,3.0);
+}
+float pdf (float score, float x) {
+    float r = rating(score);
+    return x*(1 - r/2) + (1-x)*(1 + r/2);
+}
+float customrand (float relscore) {
+    float step = 0.01;
+    float rand1 = (float)rand()/((float)RAND_MAX * step);
+    for (float i = 0; i < 1; i += step) {
+        float curpdf = pdf(relscore, i);
+        if (rand1 >= curpdf) {
+            rand1 -= curpdf;
+            continue;
+        }
+        float rand2 = (float)rand()/((float)RAND_MAX);
+        return i + step * rand2;
+    }
+
+    return -1;
+}
+
 int main () {
     int lim = 1;
     int num_of_questions = 27;
     int num_of_students = 15;
     int num_of_sheets = 2;
     int num_of_problems_to_pass = 5;
-    int num_of_problems = 20;
+    int max_num_of_problems = 25;
+    int total_num_of_problems = 45;
 
     FILE* problems_csv[num_of_sheets];
     problems_csv[0] = fopen("../progress-data/problems-1.csv", "r");
     problems_csv[1] = fopen("../progress-data/problems-2.csv", "r");
 
     char names[num_of_students][128];
-    float scores[num_of_students][num_of_sheets][num_of_problems];
+    float scores[num_of_students][num_of_sheets][max_num_of_problems];
 
     printf("| \e[34mInitialized databases.\e[0m\n"); // ]]
 
@@ -77,7 +101,7 @@ int main () {
                 printf("| \e[34mFound student.\e[0m\n"); // ]]
                 for (int j = 0; j < num_of_sheets; j++) {
                     int count = 0;
-                    for (int k = 0; k < num_of_problems; k++) {
+                    for (int k = 0; k < max_num_of_problems; k++) {
                         if (scores[i][j][k] > 0) {
                             count++;
                             score += scores[i][j][k];
@@ -100,9 +124,11 @@ int main () {
             goto nextprompt;
         }
 
-        printf("Total score of student: %f\n", score);
+        printf("Total score of student: \e[33m%f\e[0m\n", score); // ]]
 
-        float random = (float)rand()/((float)RAND_MAX/(float)num_of_questions);
+        float fnumber = num_of_questions * customrand(score/max_num_of_problems);
+
+        printf("Question number: \e[33m%i\e[0m\n", 1 + (int)fnumber); // ]]
 
 nextprompt:
         continue;

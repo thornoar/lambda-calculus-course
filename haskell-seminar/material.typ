@@ -181,11 +181,11 @@ $
 
 ```haskell
 l6 :: [Int]
-l6 = [n^2 | x <- l5, x `mod` 2 == 0] -- list comprehension
+l6 = [n^2 | n <- l5, n `mod` 2 == 0] -- list comprehension
 ```
 
 Упражнения:
-- Написать #hs `quicksort :: (Eq a) => [a] -> [a]`
+- Написать #hs `quicksort :: (Ord a) => [a] -> [a]`
 - Написать #hs `zw :: (a -> a -> b) -> [a] -> [a] -> [b]` двумя разными способами.
 - Написать #hs `length'`, не используя `length`.
 - Написать #hs `intersection`

@@ -1,4 +1,4 @@
-#import "@preview/quick-maths:0.1.0": shorthands
+#import "@preview/quick-maths:0.2.1": shorthands
 #import "@preview/ouset:0.2.0": *
 
 // Shortcut definitions
@@ -97,7 +97,7 @@
     strong(it)
   }
 
-  set outline(indent: auto, fill: repeat([.#h(3pt)]))
+  set outline(indent: auto)
   set figure(gap: 1.5em)
 
   doc
@@ -119,7 +119,7 @@
 
 // Routines for drawing reduction diagrams
 
-#import "@preview/fletcher:0.4.5" as fletcher: diagram, node, edge
+#import "@preview/fletcher:0.5.7" as fletcher: diagram, node, edge
 
 #let lnode(A, radius: 0.06cm) = node(A, shape: circle, fill: black, radius: radius, outset: 2*radius)
 #let ledge(A, B, bend: 0deg, marks:"-stealth") = edge(A, B, marks: marks, bend: bend)

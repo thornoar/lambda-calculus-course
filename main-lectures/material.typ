@@ -12,15 +12,15 @@
 #let myplainstyle(ident, head, ..args) = thmstyle(ident, head, breakable: false, titlefmt: it => strong(underline(it)), ..args)
 #let mystatestyle(ident, head, ..args) = thmstyle(ident, head, breakable: false, bodyfmt: emph, titlefmt: it => strong(underline(it)), ..args)
 
-#let def = myplainstyle("definition", "Определение")
+#let def = myplainstyle("definition", "Определение", breakable: true)
 #let agr = myplainstyle("agreement", "Договорённость", numbering: none)
 #let note = myplainstyle("note", "Замечание")
 #let nota = myplainstyle("notation", "Нотация", numbering: none)
 #let exam = myplainstyle("example", "Пример")
 #let exer = myplainstyle("exercise", "Упражнение", numbering: none)
-#let th = mystatestyle("theorem", "Теорема")
-#let lm = mystatestyle("lemma", "Лемма")
-#let state = mystatestyle("statement", "Утверждение")
+#let th = mystatestyle("theorem", "Теорема", breakable: true)
+#let lm = mystatestyle("lemma", "Лемма", breakable: true)
+#let state = mystatestyle("statement", "Утверждение", breakable: true)
 #let cor = mystatestyle("corollary", "Следствие", numbering: none)
 #let prb = mystatestyle("problem", "Задача")
 #let pf = proofstyle("proof", "Доказательство", titlefmt: it => underline(emph(it)))
@@ -120,11 +120,11 @@
   Пусть $M$ --- л-выражение. $M$ называется _корректным_ в следующих случаях:
   + $M equiv x in V$;
   + $M equiv @x.. N$, причём $N$ корректно, а также $x in.not BV(N)$;
-  + $M equiv N K$, причём $N,K$ корректны, а также $BV(N) sect FV(K) = empty$ и $FV(N) sect BV(K) = empty$.
+  + $M equiv N K$, причём $N,K$ корректны, а также $BV(N) inter FV(K) = empty$ и $FV(N) inter BV(K) = empty$.
 ]
 
 #exer[
-  Доказать, что если $M$ корректно, то $FV(M) sect BV(M) = empty$, $FV(M) union BV(M) = TV(M)$.
+  Доказать, что если $M$ корректно, то $FV(M) inter BV(M) = empty$, $FV(M) union BV(M) = TV(M)$.
 ]
 
 #exer[
@@ -170,7 +170,7 @@
 ]
 
 #note[
-  Рассмотрим $M equiv @y.. x,, N equiv y y$. Тогда по предыдущему определению мы получаем $M[x := N] == @y.. y y$, что настораживает, ведь $M equiv @y.. x acongr @u.. x equiv M'$, тогда как $ M[x := N] == @y.. y y eq.not^alpha @u.. y y == M'[x := N]. $ Однако заметим, что такая ситуация некорректна, ведь $BV(M) sect FV(N) = {y} eq.not empty$.
+  Рассмотрим $M equiv @y.. x,, N equiv y y$. Тогда по предыдущему определению мы получаем $M[x := N] == @y.. y y$, что настораживает, ведь $M equiv @y.. x acongr @u.. x equiv M'$, тогда как $ M[x := N] == @y.. y y eq.not^alpha @u.. y y == M'[x := N]. $ Однако заметим, что такая ситуация некорректна, ведь $BV(M) inter FV(N) = {y} eq.not empty$.
 ]
 
 #exer[
@@ -885,7 +885,7 @@
   Пусть #A --- некий класс числовых функций.
   + #A называется _замкнутым относительно суперпозиции,_ если для любых $chi, psi_1, psi_2, ..., psi_m in #A$, функция 
     $
-      phi (arrow(n)) = chi (psi_1(arrow(n)), psi_2(arrow(n)), ..., psi_m(arrow(n)))
+      phi (arrow(n)) = chi (psi_1(arrow(n)), psi_2(arrow(n)), ..., psi_m (arrow(n)))
     $
     лежит в #A.
   + #A называется _замкнутым относительно примитивной рекурсии,_ если лдя любых $chi, psi in #A$, функция
@@ -1002,7 +1002,7 @@
   + $"Num"^(-1) : NN_0 -> NN_0: hs "Num"^(-1)(g(num(m))) = m$
   + $"App" : NN_0^p -> NN_0: hs "App"(n_1, n_2, ..., n_k) = g(g^(-1)(n_1) dot g^(-1)(n_2) dot ... dot g^(-1)(n_k))$
   + $"Red" : NN_0 -> NN_0: hs "Red"(g(M)) = g(N)$, где $N$ --- нормальная форма $M$ (если таковая существует).
-  Далее, рассмотрим функцию $phi : NN_0^p -> NN_0$, представленную л-выражением $F$. Пусть $n_1, n_2, ..., n_p$ --- набор аргументов. Пусть $f = g(F)$. Определим $phi'$ как $"Num"^-1 circ "Red" circ "Appl" circ $
+  Далее, рассмотрим функцию $phi : NN_0^p -> NN_0$, представленную л-выражением $F$. Пусть $n_1, n_2, ..., n_p$ --- набор аргументов. Пусть $f = g(F)$. Определим $phi'$ как $"Num"^(-1) circ "Red" circ "Appl" circ $
  $
     &n_1, n_2, ..., n_p\
     &arrow.b.bar ("Num")\

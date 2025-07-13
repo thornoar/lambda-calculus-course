@@ -100,6 +100,8 @@
   set outline(indent: auto)
   set figure(gap: 1.5em)
 
+  // show math.equation: box
+
   doc
 }
 
